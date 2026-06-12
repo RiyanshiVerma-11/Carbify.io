@@ -1,5 +1,7 @@
 # Carbifyio 🌿 - Carbon Footprint Awareness Platform
 
+🚀 **Live Deployment:** [https://carbify-io-efn8.vercel.app/](https://carbify-io-efn8.vercel.app/)
+
 **Carbifyio** is a modular, secure, highly performant, and accessible web application designed to help individuals calculate, track, and reduce their carbon footprint through daily habits, gamified challenges, and personalized AI Coach insights.
 
 Built for **Virtual Promptwars 2026**, this project meets strict requirements across code quality, security, efficiency, testing, accessibility, and dockerization.
