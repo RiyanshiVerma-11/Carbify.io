@@ -95,7 +95,9 @@ def test_log_duplicate_habit_error(client, auth_headers) -> None:
 
 def test_log_habit_unauthenticated(client) -> None:
     """Accessing habit log endpoint without a token must return 401."""
-    response = client.post("/api/habits/log", json={"habit_name": "walk_instead_of_drive"})
+    response = client.post(
+        "/api/habits/log", json={"habit_name": "walk_instead_of_drive"}
+    )
     assert response.status_code == 401
 
 
@@ -182,7 +184,9 @@ def test_habit_crud_admin(client, auth_headers) -> None:
         "points": 18,
         "co2_saved": 0.7,
     }
-    response_up = client.put(f"/api/habits/{habit_id}", json=update_data, headers=auth_headers)
+    response_up = client.put(
+        f"/api/habits/{habit_id}", json=update_data, headers=auth_headers
+    )
     assert response_up.status_code == 200
     assert response_up.json()["points"] == 18
     assert response_up.json()["co2_saved"] == 0.7

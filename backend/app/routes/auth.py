@@ -96,9 +96,7 @@ def login(
 ) -> dict:
     """Authenticate with username + password and return a JWT Bearer token."""
     user: models.User | None = (
-        db.query(models.User)
-        .filter(models.User.username == form_data.username)
-        .first()
+        db.query(models.User).filter(models.User.username == form_data.username).first()
     )
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(

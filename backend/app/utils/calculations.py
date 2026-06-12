@@ -10,6 +10,7 @@ calculate_co2(...)            -> float   (total kg CO2)
 calculate_co2_breakdown(...)  -> dict    (per-category kg CO2)
 VALID_DIET_TYPES              -> frozenset  (canonical diet strings)
 """
+
 from __future__ import annotations
 
 from backend.app.config import settings
@@ -108,8 +109,7 @@ def calculate_co2_breakdown(
     f = settings.EMISSION_FACTORS
 
     energy_co2 = round(
-        electricity_kwh * f["electricity_kwh"]
-        + gas_kwh * f["gas_kwh"],
+        electricity_kwh * f["electricity_kwh"] + gas_kwh * f["gas_kwh"],
         2,
     )
 

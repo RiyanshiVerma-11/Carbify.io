@@ -15,7 +15,11 @@ def test_register_user(client) -> None:
     """Successful registration should return 201 with user data (no password hash)."""
     response = client.post(
         "/api/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 201
     data = response.json()
@@ -29,11 +33,19 @@ def test_register_duplicate_username(client) -> None:
     """Registering a taken username should return 400 with a clear message."""
     client.post(
         "/api/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
     )
     response = client.post(
         "/api/auth/register",
-        json={"username": "testuser", "email": "test2@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test2@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "Username already registered"
@@ -43,11 +55,19 @@ def test_register_duplicate_email(client) -> None:
     """Registering a taken email should return 400 with a clear message."""
     client.post(
         "/api/auth/register",
-        json={"username": "user_a", "email": "same@example.com", "password": "password123"},
+        json={
+            "username": "user_a",
+            "email": "same@example.com",
+            "password": "password123",
+        },
     )
     response = client.post(
         "/api/auth/register",
-        json={"username": "user_b", "email": "same@example.com", "password": "password123"},
+        json={
+            "username": "user_b",
+            "email": "same@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 400
     assert "Email already registered" in response.json()["detail"]
@@ -57,7 +77,11 @@ def test_register_short_username(client) -> None:
     """A username shorter than 3 characters should be rejected by validation."""
     response = client.post(
         "/api/auth/register",
-        json={"username": "ab", "email": "short@example.com", "password": "password123"},
+        json={
+            "username": "ab",
+            "email": "short@example.com",
+            "password": "password123",
+        },
     )
     assert response.status_code == 422  # Pydantic validation error
 
@@ -66,7 +90,11 @@ def test_register_short_password(client) -> None:
     """A password shorter than 6 characters should be rejected by validation."""
     response = client.post(
         "/api/auth/register",
-        json={"username": "validuser", "email": "valid@example.com", "password": "12345"},
+        json={
+            "username": "validuser",
+            "email": "valid@example.com",
+            "password": "12345",
+        },
     )
     assert response.status_code == 422  # Pydantic validation error
 
@@ -75,7 +103,11 @@ def test_register_invalid_email(client) -> None:
     """An invalid email format should be rejected by Pydantic's EmailStr validator."""
     response = client.post(
         "/api/auth/register",
-        json={"username": "validuser", "email": "not-an-email", "password": "password123"},
+        json={
+            "username": "validuser",
+            "email": "not-an-email",
+            "password": "password123",
+        },
     )
     assert response.status_code == 422
 
@@ -84,7 +116,11 @@ def test_login_success(client) -> None:
     """Valid credentials should return a JWT access token with user data."""
     client.post(
         "/api/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
     )
     response = client.post(
         "/api/auth/login",
@@ -101,7 +137,11 @@ def test_login_invalid_credentials(client) -> None:
     """Invalid password should return 401 Unauthorized."""
     client.post(
         "/api/auth/register",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
+        json={
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "password123",
+        },
     )
     response = client.post(
         "/api/auth/login",
@@ -121,10 +161,20 @@ def test_login_nonexistent_user(client) -> None:
 
 
 def test_get_me(client, auth_headers) -> None:
-    """Authenticated /me endpoint should return the current user's profile."""
+    """Authenticated /me endpoint should return the current user's profile.
+
+    The ``auth_headers`` fixture generates a unique ``fixture_user_<hex>``
+    username per invocation, so we assert on the prefix rather than an
+    exact match to remain resilient to the uuid suffix.
+    """
     response = client.get("/api/auth/me", headers=auth_headers)
     assert response.status_code == 200
-    assert response.json()["username"] == "fixture_user"
+    data = response.json()
+    assert data["username"].startswith("fixture_user")
+    assert "id" in data
+    assert "email" in data
+    assert "points" in data
+    assert "level" in data
 
 
 def test_get_me_unauthenticated(client) -> None:

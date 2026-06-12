@@ -14,12 +14,14 @@ Responsibilities:
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -31,7 +33,6 @@ from backend.app.limiter import limiter
 
 import json
 import logging
-
 
 # ---------------------------------------------------------------------------
 # Structured JSON logging
@@ -130,7 +131,10 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
+async def add_security_headers(
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     """Inject hardened HTTP security headers into every response.
 
     Headers set:
@@ -164,11 +168,11 @@ async def add_security_headers(request: Request, call_next):  # type: ignore[no-
 # ---------------------------------------------------------------------------
 # API routers
 # ---------------------------------------------------------------------------
-app.include_router(auth.router,       prefix="/api")
+app.include_router(auth.router, prefix="/api")
 app.include_router(calculator.router, prefix="/api")
-app.include_router(habits.router,     prefix="/api")
+app.include_router(habits.router, prefix="/api")
 app.include_router(challenges.router, prefix="/api")
-app.include_router(analytics.router,  prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------

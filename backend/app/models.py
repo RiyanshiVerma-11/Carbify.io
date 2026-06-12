@@ -18,11 +18,20 @@ from __future__ import annotations
 
 import datetime
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Index, func
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    Date,
+    ForeignKey,
+    Index,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from backend.app.database import Base
-
 
 POINTS_PER_LEVEL: int = 100
 """Number of eco-points required to advance one level."""
@@ -103,8 +112,8 @@ class HabitsLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    habit_type = Column(String, nullable=False)   # transport, energy, food, waste
-    habit_name = Column(String, nullable=False)   # e.g. "walk_instead_of_drive"
+    habit_type = Column(String, nullable=False)  # transport, energy, food, waste
+    habit_name = Column(String, nullable=False)  # e.g. "walk_instead_of_drive"
     co2_saved_kg = Column(Float, default=0.0)
     points_earned = Column(Integer, default=0)
     logged_date = Column(Date, default=datetime.date.today, index=True)
@@ -142,7 +151,7 @@ class Challenge(Base):
     description = Column(String, nullable=False)
     points_reward = Column(Integer, nullable=False)
     co2_saving_estimate_kg = Column(Float, default=0.0)
-    category = Column(String, nullable=False)   # transport, energy, food, waste
+    category = Column(String, nullable=False)  # transport, energy, food, waste
     duration_days = Column(Integer, default=7)
 
     user_challenges = relationship(
@@ -160,7 +169,7 @@ class UserChallenge(Base):
     challenge_id = Column(
         Integer, ForeignKey("challenges.id"), nullable=False, index=True
     )
-    status = Column(String, default="active")   # active, completed, abandoned
+    status = Column(String, default="active")  # active, completed, abandoned
     joined_date = Column(Date, default=datetime.date.today)
     completed_date = Column(Date, nullable=True)
 

@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/challenges", tags=["Challenges"])
 
+
 def seed_challenges(db: Session) -> None:
     """Insert default challenges into the database if they don't already exist.
 

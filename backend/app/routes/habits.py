@@ -50,9 +50,7 @@ def seed_habits(db: Session) -> None:
     if existing_count >= len(DEFAULT_HABITS):
         return  # Already seeded — skip all per-row checks
 
-    existing_slugs: set[str] = {
-        row[0] for row in db.query(models.Habit.slug).all()
-    }
+    existing_slugs: set[str] = {row[0] for row in db.query(models.Habit.slug).all()}
     for dh in DEFAULT_HABITS:
         if dh["slug"] not in existing_slugs:
             db.add(models.Habit(**dh))
@@ -158,7 +156,9 @@ def log_habit(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED
+)
 @limiter.limit("10/minute")
 def create_habit(
     request: Request,
@@ -173,7 +173,7 @@ def create_habit(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Habit with slug '{habit_in.slug}' already exists.",
         )
-    
+
     habit = models.Habit(
         slug=habit_in.slug,
         name=habit_in.name,
@@ -203,7 +203,7 @@ def update_habit(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Habit not found",
         )
-    
+
     if habit_in.name is not None:
         habit.name = habit_in.name
     if habit_in.category is not None:
@@ -212,7 +212,7 @@ def update_habit(
         habit.points = habit_in.points
     if habit_in.co2_saved is not None:
         habit.co2_saved = habit_in.co2_saved
-        
+
     db.commit()
     db.refresh(habit)
     return habit

@@ -23,7 +23,7 @@
 export const BASE_URL = (() => {
     // If served from a real HTTP/HTTPS origin (Nginx, Vercel, etc.)
     // use a relative path — works for any hostname including production domains.
-    const { protocol, hostname } = window.location;
+    const { protocol } = window.location;
     if (protocol === "http:" || protocol === "https:") {
         return "/api";
     }

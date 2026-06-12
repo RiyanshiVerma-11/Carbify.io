@@ -80,10 +80,14 @@ def log_emissions(
     target_date = log_in.logged_date or datetime.date.today()
 
     # Check if a log already exists for this user on this day
-    existing_log = db.query(models.EmissionsLog).filter(
-        models.EmissionsLog.user_id == current_user.id,
-        models.EmissionsLog.logged_date == target_date,
-    ).first()
+    existing_log = (
+        db.query(models.EmissionsLog)
+        .filter(
+            models.EmissionsLog.user_id == current_user.id,
+            models.EmissionsLog.logged_date == target_date,
+        )
+        .first()
+    )
 
     if existing_log:
         return _update_existing_log(existing_log, log_in, db)
@@ -138,11 +142,12 @@ def get_latest(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-) -> models.EmissionsLog | dict:
+) -> models.EmissionsLog | schemas.EmissionsLogResponse:
     """Return the most recent emissions log for the authenticated user.
 
-    If no log exists yet, a zeroed-out default response is returned so the
-    frontend always receives a valid ``EmissionsLogResponse`` shape.
+    If no log exists yet, a zeroed-out ``EmissionsLogResponse`` is returned so
+    the frontend always receives a valid, typed response — no raw dict escape
+    hatch. This preserves the Pydantic ``response_model`` contract.
     """
     latest = (
         db.query(models.EmissionsLog)
@@ -152,22 +157,23 @@ def get_latest(
     )
 
     if not latest:
-        # Return empty log default values
-        return {
-            "id": 0,
-            "user_id": current_user.id,
-            "electricity_kwh": 0.0,
-            "gas_kwh": 0.0,
-            "petrol_car_km": 0.0,
-            "diesel_car_km": 0.0,
-            "electric_car_km": 0.0,
-            "public_transit_km": 0.0,
-            "flights_km": 0.0,
-            "diet_type": "vegetarian",
-            "waste_kg": 0.0,
-            "recycling_rate": 0.0,
-            "total_co2_kg": 0.0,
-            "logged_date": datetime.date.today(),
-            "created_at": datetime.datetime.now(datetime.timezone.utc),
-        }
+        # Return a zeroed-out default using the typed response schema —
+        # avoids the unsafe `| dict` return type escape hatch.
+        return schemas.EmissionsLogResponse(
+            id=0,
+            user_id=current_user.id,
+            electricity_kwh=0.0,
+            gas_kwh=0.0,
+            petrol_car_km=0.0,
+            diesel_car_km=0.0,
+            electric_car_km=0.0,
+            public_transit_km=0.0,
+            flights_km=0.0,
+            diet_type="vegetarian",
+            waste_kg=0.0,
+            recycling_rate=0.0,
+            total_co2_kg=0.0,
+            logged_date=datetime.date.today(),
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        )
     return latest

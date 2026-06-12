@@ -9,7 +9,6 @@ and production secret-key enforcement.
 
 from __future__ import annotations
 
-import os
 import pytest
 
 from backend.app.config import Settings

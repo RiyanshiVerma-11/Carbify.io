@@ -160,12 +160,18 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
     db = next(client.app.dependency_overrides[get_db]())
 
     # Clear any cached threshold
-    db.query(models.CacheEntry).filter(models.CacheEntry.key == "youden_threshold").delete()
+    db.query(models.CacheEntry).filter(
+        models.CacheEntry.key == "youden_threshold"
+    ).delete()
     db.commit()
 
     # Create 2 more users to ensure user_count >= 3
-    user2 = models.User(username="testuser2", email="u2@test.com", hashed_password="pwd")
-    user3 = models.User(username="testuser3", email="u3@test.com", hashed_password="pwd")
+    user2 = models.User(
+        username="testuser2", email="u2@test.com", hashed_password="pwd"
+    )
+    user3 = models.User(
+        username="testuser3", email="u3@test.com", hashed_password="pwd"
+    )
     db.add_all([user2, user3])
     db.commit()
 
@@ -173,19 +179,82 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
     base_date = datetime.date(2023, 1, 1)
 
     # Seed gaps for User 1: 8 days and 9 days
-    db.add(models.HabitsLog(user_id=user1.id, habit_type="energy", habit_name="test", logged_date=base_date))
-    db.add(models.HabitsLog(user_id=user1.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=8)))
-    db.add(models.HabitsLog(user_id=user1.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=17)))
+    db.add(
+        models.HabitsLog(
+            user_id=user1.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date,
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user1.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=8),
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user1.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=17),
+        )
+    )
 
     # Seed gaps for User 2: 3 days and 4 days
-    db.add(models.HabitsLog(user_id=user2.id, habit_type="energy", habit_name="test", logged_date=base_date))
-    db.add(models.HabitsLog(user_id=user2.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=3)))
-    db.add(models.HabitsLog(user_id=user2.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=7)))
+    db.add(
+        models.HabitsLog(
+            user_id=user2.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date,
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user2.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=3),
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user2.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=7),
+        )
+    )
 
     # Seed gaps for User 3: 5 days and 10 days
-    db.add(models.HabitsLog(user_id=user3.id, habit_type="energy", habit_name="test", logged_date=base_date))
-    db.add(models.HabitsLog(user_id=user3.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=5)))
-    db.add(models.HabitsLog(user_id=user3.id, habit_type="energy", habit_name="test", logged_date=base_date + datetime.timedelta(days=15)))
+    db.add(
+        models.HabitsLog(
+            user_id=user3.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date,
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user3.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=5),
+        )
+    )
+    db.add(
+        models.HabitsLog(
+            user_id=user3.id,
+            habit_type="energy",
+            habit_name="test",
+            logged_date=base_date + datetime.timedelta(days=15),
+        )
+    )
 
     db.commit()
 

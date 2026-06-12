@@ -266,3 +266,23 @@ To validate the codebase quality and correctness, run the Pytest suite.
     ```bash
     pytest backend/tests/ -v
     ```
+
+### Docker Steps (Alternative):
+If you do not have Python, Ruff, or Black installed locally on your host machine, you can run tests and linters directly inside the running Docker container:
+
+* **Run Backend Tests:**
+  ```bash
+  docker compose exec backend pytest
+  ```
+
+* **Install & Run Code Linters/Formatters:**
+  ```bash
+  # Install Ruff and Black inside the running container
+  docker compose exec backend pip install ruff black
+
+  # Run Ruff linter with auto-fixes
+  docker compose exec backend python -m ruff check backend/app/ backend/tests/ --fix
+
+  # Run Black formatter
+  docker compose exec backend python -m black backend/app/ backend/tests/
+  ```

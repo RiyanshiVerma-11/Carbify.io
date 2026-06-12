@@ -19,7 +19,9 @@ export const UIService = {
      * @returns {string} HTML-safe string.
      */
     escapeHtml(text) {
-        if (text === null || text === undefined) return "";
+        if (text === null || text === undefined) {
+            return "";
+        }
         return String(text)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -35,7 +37,9 @@ export const UIService = {
      */
     showToast(message, type = "success") {
         const container = document.getElementById("toast-container");
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         const toast = document.createElement("div");
         toast.className = `toast ${type === "error" ? "error" : ""}`;
@@ -76,8 +80,12 @@ export const UIService = {
                 view.classList.remove("hidden");
                 // Focus container or header for screen reader support
                 const firstHeader = view.querySelector("h2");
-                if (firstHeader) firstHeader.setAttribute("tabindex", "-1");
-                if (firstHeader) firstHeader.focus();
+                if (firstHeader) {
+                    firstHeader.setAttribute("tabindex", "-1");
+                }
+                if (firstHeader) {
+                    firstHeader.focus();
+                }
             } else {
                 view.classList.add("hidden");
             }
@@ -106,7 +114,9 @@ export const UIService = {
      */
     renderCoachTips(tips) {
         const container = document.getElementById("ai-coach-tips-container");
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         container.innerHTML = "";
 
@@ -158,7 +168,9 @@ export const UIService = {
      */
     renderHabitsList(habits) {
         const container = document.getElementById("habits-list");
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         container.innerHTML = "";
 
@@ -202,7 +214,9 @@ export const UIService = {
      */
     renderHabitHistory(history) {
         const container = document.getElementById("habits-history");
-        if (!container) return;
+        if (!container) {
+            return;
+        }
 
         container.innerHTML = "";
 
@@ -252,7 +266,9 @@ export const UIService = {
         const availableContainer = document.getElementById("available-challenges");
         const joinedContainer = document.getElementById("joined-challenges");
         
-        if (!availableContainer || !joinedContainer) return;
+        if (!availableContainer || !joinedContainer) {
+            return;
+        }
 
         availableContainer.innerHTML = "";
         joinedContainer.innerHTML = "";
@@ -335,7 +351,9 @@ export const UIService = {
      */
     renderLeaderboard(leaderboard, currentUsername) {
         const tbody = document.getElementById("leaderboard-rows");
-        if (!tbody) return;
+        if (!tbody) {
+            return;
+        }
 
         tbody.innerHTML = "";
 
@@ -351,9 +369,13 @@ export const UIService = {
             }
 
             let rankEmoji = `#${index + 1}`;
-            if (index === 0) rankEmoji = "🥇 1";
-            else if (index === 1) rankEmoji = "🥈 2";
-            else if (index === 2) rankEmoji = "🥉 3";
+            if (index === 0) {
+                rankEmoji = "🥇 1";
+            } else if (index === 1) {
+                rankEmoji = "🥈 2";
+            } else if (index === 2) {
+                rankEmoji = "🥉 3";
+            }
 
             const escapedUsername = UIService.escapeHtml(user.username);
             const isSelf = user.username === currentUsername;

@@ -13,12 +13,12 @@ from __future__ import annotations
 def test_log_emissions(client, auth_headers) -> None:
     """Log emissions with known values and verify total CO₂ calculation accuracy."""
     payload = {
-        "electricity_kwh": 10.0,   # 10 * 0.385 = 3.85
-        "gas_kwh": 5.0,            # 5 * 0.185 = 0.925
-        "petrol_car_km": 20.0,     # 20 * 0.17 = 3.4
+        "electricity_kwh": 10.0,  # 10 * 0.385 = 3.85
+        "gas_kwh": 5.0,  # 5 * 0.185 = 0.925
+        "petrol_car_km": 20.0,  # 20 * 0.17 = 3.4
         "diet_type": "vegetarian",  # 3.8
-        "waste_kg": 2.0,           # 2 * 0.45 = 0.9
-        "recycling_rate": 0.5      # waste_co2 * 0.5 = 0.45
+        "waste_kg": 2.0,  # 2 * 0.45 = 0.9
+        "recycling_rate": 0.5,  # waste_co2 * 0.5 = 0.45
     }
     # Expected: 3.85 + 0.925 + 3.4 + 3.8 + 0.45 = 12.43
     response = client.post("/api/calculator/log", json=payload, headers=auth_headers)
@@ -69,7 +69,9 @@ def test_log_emissions_upsert_same_day(client, auth_headers) -> None:
 
 def test_log_history(client, auth_headers) -> None:
     """After logging once, history should contain exactly one entry."""
-    client.post("/api/calculator/log", json={"electricity_kwh": 10.0}, headers=auth_headers)
+    client.post(
+        "/api/calculator/log", json={"electricity_kwh": 10.0}, headers=auth_headers
+    )
 
     history_resp = client.get("/api/calculator/history", headers=auth_headers)
     assert history_resp.status_code == 200
@@ -169,13 +171,17 @@ def test_log_history_pagination(client, auth_headers) -> None:
     )
 
     # Fetch page 1 limit 1
-    resp_page_1 = client.get("/api/calculator/history?page=1&limit=1", headers=auth_headers)
+    resp_page_1 = client.get(
+        "/api/calculator/history?page=1&limit=1", headers=auth_headers
+    )
     assert resp_page_1.status_code == 200
     assert len(resp_page_1.json()) == 1
     assert resp_page_1.json()[0]["electricity_kwh"] == 20.0  # newest first
 
     # Fetch page 2 limit 1
-    resp_page_2 = client.get("/api/calculator/history?page=2&limit=1", headers=auth_headers)
+    resp_page_2 = client.get(
+        "/api/calculator/history?page=2&limit=1", headers=auth_headers
+    )
     assert resp_page_2.status_code == 200
     assert len(resp_page_2.json()) == 1
     assert resp_page_2.json()[0]["electricity_kwh"] == 10.0

@@ -11,20 +11,23 @@ instead of the archived python-jose library.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import hashlib
-from datetime import datetime, timedelta, timezone
 
 import bcrypt
-import jwt
-from jwt import DecodeError, ExpiredSignatureError, InvalidTokenError
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+
+# pyrefly: ignore [missing-import]
+import jwt
+
+# pyrefly: ignore [missing-import]
+from jwt import DecodeError, ExpiredSignatureError, InvalidTokenError
 from sqlalchemy.orm import Session
 
+from backend.app import models
 from backend.app.config import settings
 from backend.app.database import get_db
-from backend.app import models
 
 # ---------------------------------------------------------------------------
 # OAuth2 scheme
@@ -86,7 +89,7 @@ def create_access_token(
         Compact, URL-safe JWT string.
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta
         if expires_delta is not None
         else timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -149,14 +152,12 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
     except (DecodeError, InvalidTokenError):
-        raise credentials_exception
+        raise credentials_exception from None
 
     user: models.User | None = (
-        db.query(models.User)
-        .filter(models.User.username == username)
-        .first()
+        db.query(models.User).filter(models.User.username == username).first()
     )
     if user is None:
         raise credentials_exception
@@ -164,10 +165,10 @@ def get_current_user(
 
 
 __all__ = [
-    "oauth2_scheme",
-    "verify_password",
-    "get_password_hash",
     "create_access_token",
     "decode_access_token",
     "get_current_user",
+    "get_password_hash",
+    "oauth2_scheme",
+    "verify_password",
 ]

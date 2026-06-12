@@ -6,6 +6,7 @@ Key type-safety guarantees enforced here:
 - weekly_breakdown typed as Dict[str, float]: no silent type coercions.
 - All numeric fields carry explicit ge/le constraints for range validation.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
@@ -24,6 +25,7 @@ DietType = Literal["meat_heavy", "medium_meat", "low_meat", "vegetarian", "vegan
 # ---------------------------------------------------------------------------
 # Auth schemas
 # ---------------------------------------------------------------------------
+
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
@@ -60,6 +62,7 @@ class TokenData(BaseModel):
 # ---------------------------------------------------------------------------
 # Emissions log schemas
 # ---------------------------------------------------------------------------
+
 
 class EmissionsLogCreate(BaseModel):
     electricity_kwh: float = Field(0.0, ge=0.0)
@@ -103,6 +106,7 @@ class EmissionsLogResponse(BaseModel):
 # Habits schemas
 # ---------------------------------------------------------------------------
 
+
 class HabitLogCreate(BaseModel):
     habit_name: str  # e.g. "walk_instead_of_drive", "turn_off_ac", "recycle_bottles"
     logged_date: Optional[datetime.date] = None
@@ -123,6 +127,7 @@ class HabitLogResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Habit schemas
 # ---------------------------------------------------------------------------
+
 
 class HabitResponse(BaseModel):
     id: int
@@ -154,6 +159,7 @@ class HabitUpdate(BaseModel):
 # Challenge schemas
 # ---------------------------------------------------------------------------
 
+
 class ChallengeResponse(BaseModel):
     id: int
     title: str
@@ -182,6 +188,7 @@ class UserChallengeResponse(BaseModel):
 # Leaderboard schemas
 # ---------------------------------------------------------------------------
 
+
 class LeaderboardUser(BaseModel):
     username: str
     points: int
@@ -200,9 +207,10 @@ class LeaderboardResponse(BaseModel):
 # Analytics schemas
 # ---------------------------------------------------------------------------
 
+
 class AICoachTip(BaseModel):
     category: str
-    impact: str   # "High" | "Medium" | "Low"
+    impact: str  # "High" | "Medium" | "Low"
     savings_kg: float
     message: str
 
@@ -241,6 +249,7 @@ class TrendResponse(BaseModel):
 # Utility / Helper schemas
 # ---------------------------------------------------------------------------
 
+
 class PaginationQuery(BaseModel):
     page: int = Field(1, ge=1, description="Page number")
     limit: int = Field(50, ge=1, le=100, description="Items per page")
@@ -270,4 +279,3 @@ __all__ = [
     "TrendResponse",
     "PaginationQuery",
 ]
-

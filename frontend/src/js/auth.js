@@ -122,7 +122,9 @@ export const AuthService = {
      * @throws {Error} If the profile fetch fails (clears session automatically).
      */
     async fetchProfile() {
-        if (!this.isAuthenticated()) return null;
+        if (!this.isAuthenticated()) {
+            return null;
+        }
         try {
             const response = await fetch(`${BASE_URL}/auth/me`, {
                 headers: this.getAuthHeaders()

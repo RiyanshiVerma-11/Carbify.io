@@ -34,21 +34,23 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",          # tolerate unknown keys in .env
+        extra="ignore",  # tolerate unknown keys in .env
     )
 
     # ── Project meta ──────────────────────────────────────────────────────
-    PROJECT_NAME: str = Field(default="Carbifyio API", description="Human-readable API name.")
+    PROJECT_NAME: str = Field(
+        default="Carbifyio API", description="Human-readable API name."
+    )
 
     # ── Security ──────────────────────────────────────────────────────────
     SECRET_KEY: str = Field(
         default="",
         description="HMAC secret used to sign JWT tokens. "
-                    "Must be set explicitly in production.",
+        "Must be set explicitly in production.",
     )
     ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm.")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=30,   # 30 minutes (mitigates stolen token window)
+        default=30,  # 30 minutes (mitigates stolen token window)
         ge=1,
         description="Token lifetime in minutes.",
     )

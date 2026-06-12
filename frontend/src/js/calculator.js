@@ -56,7 +56,9 @@ export const CalculatorService = {
      * @returns {Object} Parsed input values keyed by field name.
      */
     getCalculatorInputs(form) {
-        if (!form) return {};
+        if (!form) {
+            return {};
+        }
         return {
             electricity_kwh: parseFloat(form.electricity_kwh.value) || 0.0,
             gas_kwh: parseFloat(form.gas_kwh.value) || 0.0,

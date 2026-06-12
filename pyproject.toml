@@ -53,6 +53,8 @@ ignore = [
     "B008",  # FastAPI uses function calls in default arguments (Depends())
     "N805",  # Pydantic v2 validators use cls but ruff flags them
     "UP007", # allow Optional[X] alongside X | None for Pydantic compat
+    "RUF002", # ignore ambiguous docstring characters (like en-dash)
+    "RUF003", # ignore ambiguous comment characters
 ]
 
 [tool.ruff.lint.isort]
@@ -61,7 +63,7 @@ force-sort-within-sections = true
 
 [tool.ruff.lint.per-file-ignores]
 # Test files may use broad assertions and fixtures
-"backend/tests/**" = ["S101", "ANN", "D"]
+"backend/tests/**" = ["S101", "ANN", "D", "E402"]
 
 
 # ─── Black formatter ──────────────────────────────────────────────────────────

@@ -38,11 +38,15 @@ function initializeTheme() {
     if (savedTheme === "light") {
         body.classList.remove("dark-theme");
         body.classList.add("light-theme");
-        if (themeIcon) themeIcon.textContent = "🌙";
+        if (themeIcon) {
+            themeIcon.textContent = "🌙";
+        }
     } else {
         body.classList.remove("light-theme");
         body.classList.add("dark-theme");
-        if (themeIcon) themeIcon.textContent = "☀️";
+        if (themeIcon) {
+            themeIcon.textContent = "☀️";
+        }
     }
 }
 
@@ -57,12 +61,16 @@ function toggleTheme() {
     if (body.classList.contains("dark-theme")) {
         body.classList.remove("dark-theme");
         body.classList.add("light-theme");
-        if (themeIcon) themeIcon.textContent = "🌙";
+        if (themeIcon) {
+            themeIcon.textContent = "🌙";
+        }
         targetTheme = "light";
     } else {
         body.classList.remove("light-theme");
         body.classList.add("dark-theme");
-        if (themeIcon) themeIcon.textContent = "☀️";
+        if (themeIcon) {
+            themeIcon.textContent = "☀️";
+        }
     }
 
     localStorage.setItem("carbify_theme", targetTheme);
@@ -86,7 +94,9 @@ async function checkAuthStatus() {
     
     if (AuthService.isAuthenticated()) {
         // Show Navigation options
-        if (navList) navList.classList.remove("hidden");
+        if (navList) {
+            navList.classList.remove("hidden");
+        }
         if (authBtn) {
             authBtn.textContent = "Sign Out";
             authBtn.className = "btn btn-secondary";
@@ -98,13 +108,15 @@ async function checkAuthStatus() {
             updateHeaderStats(profile);
             UIService.switchView("dashboard-view");
             loadDashboardData();
-        } catch (error) {
+        } catch {
             UIService.showToast("Session expired. Please log in again.", "error");
             forceSignOut();
         }
     } else {
         // Hide Navigation details
-        if (navList) navList.classList.add("hidden");
+        if (navList) {
+            navList.classList.add("hidden");
+        }
         if (authBtn) {
             authBtn.textContent = "Login / Register";
             authBtn.className = "btn btn-primary";
@@ -119,14 +131,22 @@ async function checkAuthStatus() {
  * @param {Object|null} user - User profile object.
  */
 function updateHeaderStats(user) {
-    if (!user) return;
+    if (!user) {
+        return;
+    }
     const dashUser = document.getElementById("dash-username");
     const dashLevel = document.getElementById("dash-level");
     const dashPoints = document.getElementById("dash-points");
     
-    if (dashUser) dashUser.textContent = user.username;
-    if (dashLevel) dashLevel.textContent = user.level;
-    if (dashPoints) dashPoints.textContent = user.points;
+    if (dashUser) {
+        dashUser.textContent = user.username;
+    }
+    if (dashLevel) {
+        dashLevel.textContent = user.level;
+    }
+    if (dashPoints) {
+        dashPoints.textContent = user.points;
+    }
 }
 
 /**
@@ -356,7 +376,9 @@ function setupEventBindings() {
  * @param {string} viewId - The view panel ID being navigated to.
  */
 function loadViewData(viewId) {
-    if (!AuthService.isAuthenticated()) return;
+    if (!AuthService.isAuthenticated()) {
+        return;
+    }
     
     switch (viewId) {
         case "dashboard-view":
@@ -466,13 +488,17 @@ async function loadCalculatorData() {
  */
 function updateLiveCarbonPreview() {
     const form = document.getElementById("calculator-form");
-    if (!form) return;
+    if (!form) {
+        return;
+    }
     
     const inputs = CalculatorService.getCalculatorInputs(form);
     
     const estimate = CalculatorService.calculateLive(inputs);
     const label = document.getElementById("live-carbon-preview");
-    if (label) label.textContent = estimate;
+    if (label) {
+        label.textContent = estimate;
+    }
 }
 
 /**

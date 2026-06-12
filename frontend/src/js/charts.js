@@ -30,19 +30,25 @@ export const ChartsService = {
         const ctx = document.getElementById("emissionsChart");
         const placeholder = document.getElementById("chart-placeholder");
         
-        if (!ctx) return;
+        if (!ctx) {
+            return;
+        }
         
         // Sum values to check if there is data
         const total = (data.energy || 0) + (data.transport || 0) + (data.food || 0) + (data.waste || 0);
         
         if (total === 0) {
             ctx.classList.add("hidden");
-            if (placeholder) placeholder.classList.remove("hidden");
+            if (placeholder) {
+                placeholder.classList.remove("hidden");
+            }
             return;
         }
         
         ctx.classList.remove("hidden");
-        if (placeholder) placeholder.classList.add("hidden");
+        if (placeholder) {
+            placeholder.classList.add("hidden");
+        }
         
         const chartData = {
             labels: ['Energy', 'Transport', 'Food', 'Waste'],
@@ -110,7 +116,9 @@ export const ChartsService = {
     _updateScreenReaderTable(data) {
         const tableBody = document.getElementById("emissions-chart-table-body");
         const summaryText = document.getElementById("emissions-chart-summary");
-        if (!tableBody || !summaryText) return;
+        if (!tableBody || !summaryText) {
+            return;
+        }
 
         tableBody.innerHTML = "";
         const categories = ['Energy', 'Transport', 'Food', 'Waste'];
@@ -148,7 +156,9 @@ export const ChartsService = {
      */
     renderTrendChart(trendData) {
         const ctx = document.getElementById("trendChart");
-        if (!ctx) return;
+        if (!ctx) {
+            return;
+        }
 
         const isLight = document.body.classList.contains("light-theme");
         const textColor = isLight ? "#334155" : "#94a3b8";
@@ -178,7 +188,9 @@ export const ChartsService = {
                     backgroundColor: (context) => {
                         const chart = context.chart;
                         const { ctx: canvasCtx, chartArea } = chart;
-                        if (!chartArea) return "rgba(16,185,129,0.0)";
+                        if (!chartArea) {
+                            return "rgba(16,185,129,0.0)";
+                        }
                         const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
                         gradient.addColorStop(0, "rgba(16,185,129,0.25)");
                         gradient.addColorStop(1, "rgba(16,185,129,0.01)");
@@ -194,7 +206,7 @@ export const ChartsService = {
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: (ctx) => ` ${ctx.parsed.y.toFixed(2)} kg CO₂`,
+                            label: (tooltipItem) => ` ${tooltipItem.parsed.y.toFixed(2)} kg CO₂`,
                         }
                     }
                 },
@@ -236,7 +248,9 @@ export const ChartsService = {
     _updateTrendScreenReaderTable(trendData) {
         const tableBody = document.getElementById("trend-chart-table-body");
         const summaryEl = document.getElementById("trend-chart-summary");
-        if (!tableBody) return;
+        if (!tableBody) {
+            return;
+        }
 
         tableBody.innerHTML = "";
         const nonZero = trendData.filter(d => d.total_co2_kg > 0);
