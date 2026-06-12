@@ -1,0 +1,390 @@
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.orm import Session
+from sqlalchemy import func, text
+from backend.app.database import get_db
+from backend.app import models, schemas, auth
+from backend.app.limiter import limiter
+from backend.app.utils.calculations import calculate_co2_breakdown
+import datetime
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/analytics", tags=["Analytics & Insights"])
+
+
+import json
+
+
+def db_cache_get(db: Session, key: str) -> any:
+    try:
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        entry = (
+            db.query(models.CacheEntry)
+            .filter(
+                models.CacheEntry.key == key,
+                models.CacheEntry.expires_at > now_utc
+            )
+            .first()
+        )
+        if entry:
+            return json.loads(entry.value)
+    except Exception as exc:
+        logger.error("Error reading DB cache key '%s': %s", key, exc)
+    return None
+
+
+def db_cache_set(db: Session, key: str, value: any, ttl_seconds: int) -> None:
+    try:
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        expires_at = now_utc + datetime.timedelta(seconds=ttl_seconds)
+        val_str = json.dumps(value)
+        
+        # Check if entry exists
+        entry = db.query(models.CacheEntry).filter(models.CacheEntry.key == key).first()
+        if entry:
+            entry.value = val_str
+            entry.expires_at = expires_at
+        else:
+            entry = models.CacheEntry(key=key, value=val_str, expires_at=expires_at)
+            db.add(entry)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.error("Error setting DB cache key '%s': %s", key, exc)
+
+
+def calculate_optimal_inactivity_threshold(db: Session) -> int:
+    """
+    Optimize the user inactivity alert threshold (in days) using Youden's J-statistic.
+    J = Sensitivity + Specificity - 1.
+
+    OPTIMIZED — replaces O(users × logs) N+1 pattern with a single aggregate
+    database query that computes consecutive habit-log date gaps using a
+    self-join on a row-number window function.  SQLite and PostgreSQL both
+    support the ROW_NUMBER() window syntax used here, making this portable.
+
+    Caches the calculated threshold in the database-backed CacheEntry for 12 hours
+    to prevent executing this table-scan CTE query on every single user request.
+    """
+    cached_threshold = db_cache_get(db, "youden_threshold")
+    if cached_threshold is not None:
+        return cached_threshold
+
+    default_threshold = 5
+    try:
+        # ── Step 1: check minimum user count before expensive work ───────────
+        user_count = db.query(func.count(models.User.id)).scalar()
+        if user_count < 3:
+            return default_threshold
+
+        # ── Step 2: single-query gap extraction via self-join on row_number ──
+        # We assign a sequential rank per (user_id) ordered by logged_date DESC,
+        # then join the table to itself on rank and rank+1 to obtain consecutive
+        # pairs.  julianday() computes the day-delta entirely inside the DB.
+        gap_sql = text(
+            """
+            WITH ranked AS (
+                SELECT
+                    user_id,
+                    logged_date,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY user_id
+                        ORDER BY logged_date DESC
+                    ) AS rn
+                FROM habits_logs
+            )
+            SELECT CAST(
+                ABS(julianday(a.logged_date) - julianday(b.logged_date))
+                AS INTEGER
+            ) AS gap_days
+            FROM ranked a
+            JOIN ranked b
+                ON a.user_id = b.user_id
+               AND a.rn = b.rn - 1
+            WHERE gap_days > 0
+            """
+        )
+        result = db.execute(gap_sql)
+        gaps: list[int] = [row[0] for row in result if row[0] is not None]
+
+        if not gaps:
+            return default_threshold
+
+        # ── Step 3: Youden's J-statistic across candidate thresholds ─────────
+        # Ground-truth: gaps > 7 days are "truly inactive" periods.
+        actual_inactive = [g for g in gaps if g > 7]
+        actual_active   = [g for g in gaps if g <= 7]
+
+        if not actual_inactive or not actual_active:
+            return default_threshold
+
+        best_threshold = default_threshold
+        max_j = -1.0
+
+        for t in range(2, 11):
+            tp  = sum(1 for g in actual_inactive if g >= t)
+            fn  = sum(1 for g in actual_inactive if g <  t)
+            tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
+            tn  = sum(1 for g in actual_active if g <  t)
+            fp  = sum(1 for g in actual_active if g >= t)
+            tnr = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+            j = tpr + tnr - 1.0
+            if j > max_j:
+                max_j = j
+                best_threshold = t
+
+        # Cache the calculated optimal threshold for 12 hours (43200 seconds)
+        db_cache_set(db, "youden_threshold", best_threshold, ttl_seconds=43200)
+        return best_threshold
+
+    except Exception as exc:
+        logger.error("Error calculating Youden's J-statistic threshold: %s", exc)
+        return default_threshold
+
+
+@router.get("", response_model=schemas.PersonalizedAnalyticsResponse)
+@limiter.limit("15/minute")
+def get_analytics(
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    # Retrieve latest emissions log for the authenticated user
+    latest_log = (
+        db.query(models.EmissionsLog)
+        .filter(models.EmissionsLog.user_id == current_user.id)
+        .order_by(models.EmissionsLog.logged_date.desc())
+        .first()
+    )
+
+    # Aggregate total carbon saved via habits in a single DB query
+    total_saved_result = db.query(
+        func.sum(models.HabitsLog.co2_saved_kg)
+    ).filter(models.HabitsLog.user_id == current_user.id).scalar()
+    carbon_saved_kg = round(float(total_saved_result or 0.0), 2)
+
+    # No log yet — return zeroed-out response with a welcome tip
+    if not latest_log:
+        return schemas.PersonalizedAnalyticsResponse(
+            total_co2_kg=0.0,
+            carbon_saved_kg=carbon_saved_kg,
+            daily_average_kg=0.0,
+            weekly_breakdown={"energy": 0.0, "transport": 0.0, "food": 0.0, "waste": 0.0},
+            ai_coach_tips=[
+                schemas.AICoachTip(
+                    category="general",
+                    impact="Medium",
+                    savings_kg=5.0,
+                    message=(
+                        "Welcome to Carbifyio! Complete your Carbon Calculator log "
+                        "to receive tailored coach suggestions."
+                    ),
+                )
+            ],
+        )
+
+    # ── Use the shared utility for breakdown — no duplicated factor math ────
+    weekly_breakdown: dict[str, float] = calculate_co2_breakdown(
+        electricity_kwh=latest_log.electricity_kwh,
+        gas_kwh=latest_log.gas_kwh,
+        petrol_car_km=latest_log.petrol_car_km,
+        diesel_car_km=latest_log.diesel_car_km,
+        electric_car_km=latest_log.electric_car_km,
+        public_transit_km=latest_log.public_transit_km,
+        flights_km=latest_log.flights_km,
+        diet_type=latest_log.diet_type,
+        waste_kg=latest_log.waste_kg,
+        recycling_rate=latest_log.recycling_rate,
+    )
+    total_co2 = round(sum(weekly_breakdown.values()), 2)
+
+    # ── AI Coach Tips ────────────────────────────────────────────────────────
+    tips: list[schemas.AICoachTip] = []
+
+    # Calculate optimal inactivity threshold using Youden's J-statistic
+    optimal_gap_threshold = calculate_optimal_inactivity_threshold(db)
+
+    # Alert if the user has been inactive longer than the optimised threshold
+    days_since_last_log = (datetime.date.today() - latest_log.logged_date).days
+    if days_since_last_log >= optimal_gap_threshold:
+        tips.append(
+            schemas.AICoachTip(
+                category="general",
+                impact="High",
+                savings_kg=7.5,
+                message=(
+                    f"Engagement Alert: It has been {days_since_last_log} days since "
+                    f"your last log. Dynamic threshold optimization (Youden's J-statistic "
+                    f"optimal threshold = {optimal_gap_threshold} days) indicates logging "
+                    f"today will help you stay on track and avoid green habit churn!"
+                ),
+            )
+        )
+
+    # Sort categories to surface the dominant emission source
+    sorted_categories = sorted(weekly_breakdown.items(), key=lambda x: x[1], reverse=True)
+    highest_cat, highest_val = sorted_categories[0]
+
+    if highest_cat == "transport" and highest_val > 0:
+        tips.append(
+            schemas.AICoachTip(
+                category="transport",
+                impact="High",
+                savings_kg=10.5,
+                message=(
+                    "Transport is your biggest source of emissions. Shifting 30 km of "
+                    "single-occupancy petrol car commuting to public transit or cycling "
+                    "this week will save over 10 kg CO2!"
+                ),
+            )
+        )
+    elif highest_cat == "energy" and highest_val > 0:
+        tips.append(
+            schemas.AICoachTip(
+                category="energy",
+                impact="High",
+                savings_kg=8.0,
+                message=(
+                    "Energy usage at home is dominant. Lowering your heating/cooling "
+                    "by 2°C or using solar energy could save up to 8 kg CO2 per day."
+                ),
+            )
+        )
+    elif highest_cat == "food":
+        if latest_log.diet_type in ("meat_heavy", "medium_meat"):
+            tips.append(
+                schemas.AICoachTip(
+                    category="food",
+                    impact="High",
+                    savings_kg=4.3,
+                    message=(
+                        "Your diet has high emissions. Shifting to vegetarian or vegan "
+                        "options just twice a week will save 4.3 kg CO2."
+                    ),
+                )
+            )
+        else:
+            tips.append(
+                schemas.AICoachTip(
+                    category="food",
+                    impact="Medium",
+                    savings_kg=1.8,
+                    message=(
+                        "Great work maintaining a low-carbon diet! Sharing your "
+                        "eco-friendly recipes with others can expand your positive impact."
+                    ),
+                )
+            )
+    elif highest_cat == "waste" and highest_val > 0:
+        tips.append(
+            schemas.AICoachTip(
+                category="waste",
+                impact="Medium",
+                savings_kg=3.5,
+                message=(
+                    "Reducing waste footprint. Try composting organic waste and avoiding "
+                    "plastic wrap. Increasing your recycling rate to 80% saves ~3.5 kg CO2."
+                ),
+            )
+        )
+
+    # Supplementary tips when the list is still short
+    if len(tips) < 3:
+        if latest_log.electricity_kwh > 10:
+            tips.append(
+                schemas.AICoachTip(
+                    category="energy",
+                    impact="Medium",
+                    savings_kg=1.2,
+                    message=(
+                        "Turn off AC units and log 'Turned off AC/heating' in the "
+                        "Habits tab to earn 15 Eco-points!"
+                    ),
+                )
+            )
+        if latest_log.petrol_car_km > 20:
+            tips.append(
+                schemas.AICoachTip(
+                    category="transport",
+                    impact="Medium",
+                    savings_kg=1.5,
+                    message=(
+                        "Log 'Walked/cycled instead of driving' to earn 20 Eco-points "
+                        "and offset your transport emissions."
+                    ),
+                )
+            )
+        # Safety net: always provide at least one actionable tip
+        if not tips:
+            tips.append(
+                schemas.AICoachTip(
+                    category="general",
+                    impact="Low",
+                    savings_kg=1.0,
+                    message=(
+                        "Explore new habits in the habits dashboard to unlock carbon "
+                        "reductions and score more points."
+                    ),
+                )
+            )
+
+    return schemas.PersonalizedAnalyticsResponse(
+        total_co2_kg=total_co2,
+        carbon_saved_kg=carbon_saved_kg,
+        daily_average_kg=round(total_co2, 2),
+        weekly_breakdown=weekly_breakdown,
+        ai_coach_tips=tips,
+    )
+
+
+# ── Leaderboard ──────────────────────────────────────────────────────────────
+
+@router.get("/leaderboard", response_model=schemas.LeaderboardResponse)
+@limiter.limit("15/minute")
+def get_leaderboard(
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    cached_data = db_cache_get(db, "leaderboard")
+
+    if cached_data is None:
+        # Only the top-10 rows are fetched — avoids full-table scan
+        top_users = (
+            db.query(models.User)
+            .order_by(models.User.points.desc())
+            .limit(10)
+            .all()
+        )
+        cached_data = [
+            {"username": u.username, "points": u.points, "level": u.level}
+            for u in top_users
+        ]
+        db_cache_set(db, "leaderboard", cached_data, ttl_seconds=60)
+
+    leaderboard = [
+        schemas.LeaderboardUser(
+            username=entry["username"],
+            points=entry["points"],
+            level=entry["level"],
+        )
+        for entry in cached_data
+    ]
+
+    # Efficient rank: count users with strictly more points + 1
+    user_rank = (
+        db.query(models.User)
+        .filter(models.User.points > current_user.points)
+        .count()
+        + 1
+    )
+
+    return schemas.LeaderboardResponse(
+        leaderboard=leaderboard,
+        user_rank=user_rank,
+        user_points=current_user.points,
+    )

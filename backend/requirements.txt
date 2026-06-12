@@ -1,0 +1,11 @@
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+sqlalchemy>=2.0.28
+bcrypt==4.0.1
+PyJWT>=2.8.0
+pydantic[email]>=2.6.4
+pydantic-settings>=2.2.1
+python-multipart>=0.0.9
+slowapi>=0.1.9
+pytest>=8.1.1
+httpx2

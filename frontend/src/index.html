@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Carbifyio is a secure, modern, gamified carbon footprint tracking and reduction platform. Log emissions, practice green habits, and level up.">
+    <title>Carbifyio - Carbon Footprint Tracker & Coach</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+    <!-- Skip to Content Link for Keyboard Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to Main Content</a>
+
+    <!-- Top Navigation Header -->
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <span class="logo-icon" aria-hidden="true">🌱</span>
+                <h1 class="logo-title">Carbifyio</h1>
+            </div>
+            
+            <!-- Main Navigation Links -->
+            <nav class="main-nav" aria-label="Primary Navigation">
+                <ul class="nav-list" id="nav-list">
+                    <li><button class="nav-btn active" data-target="dashboard-view" id="nav-dashboard">Dashboard</button></li>
+                    <li><button class="nav-btn" data-target="calculator-view" id="nav-calculator">Calculator</button></li>
+                    <li><button class="nav-btn" data-target="habits-view" id="nav-habits">Habits</button></li>
+                    <li><button class="nav-btn" data-target="challenges-view" id="nav-challenges">Challenges</button></li>
+                    <li><button class="nav-btn" data-target="leaderboard-view" id="nav-leaderboard">Leaderboard</button></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle high contrast / light mode">
+                    <span class="toggle-icon" id="theme-icon">☀️</span>
+                </button>
+                <!-- User Profile / Session Button -->
+                <div id="user-profile-menu" class="user-menu">
+                    <button id="auth-action-btn" class="btn btn-secondary">Login</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="app-content">
+        <!-- Toast Notification Panel for user action feedback -->
+        <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+        <!-- 1. Authentication View -->
+        <section id="auth-view" class="view-panel hidden" aria-labelledby="auth-title">
+            <div class="auth-card glass-panel">
+                <h2 id="auth-title" class="section-title text-center">Join Carbifyio</h2>
+                <div class="auth-tabs" role="tablist">
+                    <button id="tab-login" class="auth-tab-btn active" role="tab" aria-selected="true" aria-controls="login-form-container">Login</button>
+                    <button id="tab-register" class="auth-tab-btn" role="tab" aria-selected="false" aria-controls="register-form-container">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form-container" class="form-container" role="tabpanel" aria-labelledby="tab-login">
+                    <form id="login-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
+                            <input type="text" id="login-username" name="username" required autocomplete="username" placeholder="Enter your username">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form-container" class="form-container hidden" role="tabpanel" aria-labelledby="tab-register">
+                    <form id="register-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="reg-username">Username</label>
+                            <input type="text" id="reg-username" name="username" required autocomplete="username" minlength="3" placeholder="Enter username (min 3 chars)">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Email Address</label>
+                            <input type="email" id="reg-email" name="email" required autocomplete="email" placeholder="you@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <input type="password" id="reg-password" name="password" required autocomplete="new-password" minlength="6" placeholder="Choose a password (min 6 chars)">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Dashboard View -->
+        <section id="dashboard-view" class="view-panel" aria-labelledby="dashboard-title">
+            <!-- User Info Card -->
+            <div class="dashboard-user-bar glass-panel mb-6">
+                <div class="user-profile-summary">
+                    <div class="user-avatar" aria-hidden="true">👤</div>
+                    <div>
+                        <h2 class="user-welcome">Hello, <span id="dash-username">Eco Warrior</span>!</h2>
+                        <p class="user-sub">Ready to reduce your carbon footprint today?</p>
+                    </div>
+                </div>
+                <div class="user-stats-grid">
+                    <div class="stat-pill">
+                        <span class="stat-label">Eco Level</span>
+                        <span class="stat-val" id="dash-level">1</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-label">Total Points</span>
+                        <span class="stat-val" id="dash-points">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Statistics Grid -->
+            <div class="grid-layout cols-3 mb-6">
+                <!-- Total Footprint Card -->
+                <div class="metric-card glass-panel text-center">
+                    <div class="metric-icon" aria-hidden="true">💨</div>
+                    <h3 class="metric-title">Daily Carbon Footprint</h3>
+                    <p class="metric-number"><span id="dash-total-co2">0.0</span> <span class="unit">kg CO₂</span></p>
+                    <p class="metric-trend" id="dash-co2-comment">Log calculations to assess status.</p>
+                </div>
+
+                <!-- Carbon Saved Card -->
+                <div class="metric-card glass-panel text-center">
+                    <div class="metric-icon" aria-hidden="true">🍃</div>
+                    <h3 class="metric-title">Accumulated Carbon Saved</h3>
+                    <p class="metric-number text-green"><span id="dash-saved-co2">0.0</span> <span class="unit">kg CO₂</span></p>
+                    <p class="metric-trend">Through completed daily habits!</p>
+                </div>
+
+                <!-- Gamified Challenger Banner -->
+                <div class="metric-card glass-panel text-center">
+                    <div class="metric-icon" aria-hidden="true">🏆</div>
+                    <h3 class="metric-title">Active Challenges</h3>
+                    <p class="metric-number" id="dash-active-challenges">0</p>
+                    <button class="btn btn-small btn-secondary mt-2" onclick="document.getElementById('nav-challenges').click()">Join more</button>
+                </div>
+            </div>
+
+            <!-- Analytics Breakdown & Coach Suggestions -->
+            <div class="grid-layout cols-2">
+                <div class="glass-panel">
+                    <h3 class="panel-subtitle">Emissions Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="emissionsChart" aria-label="Emissions distribution pie chart" aria-describedby="emissions-chart-summary" role="img">
+                            <!--
+                                WCAG 1.1.1 Non-text Content — accessible fallback table.
+                                Updated dynamically by charts.js whenever the chart re-renders.
+                                Screen readers will read the <caption> plus table data.
+                            -->
+                            <table id="emissions-chart-table" class="sr-only" aria-label="Emissions breakdown data table">
+                                <caption>Carbon emissions breakdown by category (kg CO₂e)</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Category</th>
+                                        <th scope="col">Amount (kg CO₂e)</th>
+                                        <th scope="col">Share (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emissions-chart-table-body">
+                                    <!-- Rows injected by charts.js on each render -->
+                                    <tr><td colspan="3">No data logged yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </canvas>
+                        <!-- ARIA live region: announced to screen readers when chart data changes -->
+                        <p id="emissions-chart-summary" class="sr-only" aria-live="polite" aria-atomic="true">
+                            No emissions data logged yet. Use the Calculator tab to record your first entry.
+                        </p>
+                        <div id="chart-placeholder" class="chart-placeholder">
+                            <p>No carbon log data found. Use the Calculator to start tracking!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel flex-column">
+                    <h3 class="panel-subtitle">Personalized AI Coach Tips</h3>
+                    <div id="ai-coach-tips-container" class="coach-tips-list">
+                        <!-- Tips populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Calculator View -->
+        <section id="calculator-view" class="view-panel hidden" aria-labelledby="calculator-title">
+            <div class="glass-panel max-width-800 mx-auto">
+                <h2 id="calculator-title" class="section-title">Carbon Footprint Calculator</h2>
+                <p class="section-sub mb-6">Enter details of your resource usage and daily transport to generate an accurate carbon log.</p>
+
+                <form id="calculator-form">
+                    <!-- Energy Section -->
+                    <fieldset class="form-section">
+                        <legend class="section-legend">💡 Household Energy Usage</legend>
+                        <div class="grid-layout cols-2">
+                            <div class="form-group">
+                                <label for="calc-electricity">Electricity Consumed (kWh)</label>
+                                <input type="number" id="calc-electricity" name="electricity_kwh" min="0" step="0.1" value="0.0" aria-describedby="help-electricity">
+                                <span class="help-text" id="help-electricity">Average daily electricity consumption</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-gas">Natural Gas Consumed (kWh)</label>
+                                <input type="number" id="calc-gas" name="gas_kwh" min="0" step="0.1" value="0.0" aria-describedby="help-gas">
+                                <span class="help-text" id="help-gas">Average daily gas consumption</span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Transportation Section -->
+                    <fieldset class="form-section">
+                        <legend class="section-legend">🚗 Transportation & Travel (Daily)</legend>
+                        <div class="grid-layout cols-3">
+                            <div class="form-group">
+                                <label for="calc-petrol">Petrol Car (km)</label>
+                                <input type="number" id="calc-petrol" name="petrol_car_km" min="0" step="0.5" value="0.0">
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-diesel">Diesel Car (km)</label>
+                                <input type="number" id="calc-diesel" name="diesel_car_km" min="0" step="0.5" value="0.0">
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-electric">Electric Car (km)</label>
+                                <input type="number" id="calc-electric" name="electric_car_km" min="0" step="0.5" value="0.0">
+                            </div>
+                        </div>
+                        <div class="grid-layout cols-2 mt-4">
+                            <div class="form-group">
+                                <label for="calc-transit">Public Transport / Train (km)</label>
+                                <input type="number" id="calc-transit" name="public_transit_km" min="0" step="0.5" value="0.0">
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-flights">Annual Flight Distance (km)</label>
+                                <input type="number" id="calc-flights" name="flights_km" min="0" step="1" value="0.0" aria-describedby="help-flights">
+                                <span class="help-text" id="help-flights">Log annualized kilometers divided by 365</span>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Diet and Waste Section -->
+                    <fieldset class="form-section">
+                        <legend class="section-legend">🥗 Diet & Waste Footprint</legend>
+                        <div class="grid-layout cols-2">
+                            <div class="form-group">
+                                <label for="calc-diet">Dietary Habits</label>
+                                <select id="calc-diet" name="diet_type">
+                                    <option value="meat_heavy">Heavy Meat Eater (Daily beef/pork)</option>
+                                    <option value="medium_meat">Average Meat Eater (Moderate meat)</option>
+                                    <option value="low_meat">Low Meat / Fish Eater (Mediterranean)</option>
+                                    <option value="vegetarian" selected>Vegetarian (No meat/fish, consumes dairy)</option>
+                                    <option value="vegan">Vegan (Zero animal products)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="calc-waste">Waste Generated per Day (kg)</label>
+                                <input type="number" id="calc-waste" name="waste_kg" min="0" step="0.1" value="0.0">
+                            </div>
+                        </div>
+                        <div class="form-group mt-4">
+                            <label for="calc-recycling">Recycling Rate: <span id="recycling-percentage">0</span>%</label>
+                            <input type="range" id="calc-recycling" name="recycling_rate" min="0" max="1" step="0.05" value="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-describedby="help-recycling">
+                            <span class="help-text" id="help-recycling">Estimate the percentage of paper, plastics, and glass you recycle.</span>
+                        </div>
+                    </fieldset>
+
+                    <!-- Realtime Estimate Preview -->
+                    <div class="calculator-preview-box">
+                        <span class="preview-label">Estimated Log Carbon:</span>
+                        <span class="preview-value"><span id="live-carbon-preview">3.8</span> kg CO₂e</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Log & Save Carbon Calculations</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- 4. Habits View -->
+        <section id="habits-view" class="view-panel hidden" aria-labelledby="habits-title">
+            <div class="grid-layout cols-3-1">
+                <div class="glass-panel">
+                    <h2 id="habits-title" class="section-title">Green Habits Tracker</h2>
+                    <p class="section-sub mb-6">Log daily sustainable habits to reduce your footprints, gain eco-points, and level up!</p>
+                    
+                    <div class="habits-grid" id="habits-list">
+                        <!-- Habits loaded dynamically -->
+                    </div>
+                </div>
+
+                <div class="glass-panel">
+                    <h3 class="panel-subtitle">Logged Habits History</h3>
+                    <ul class="habits-history-list" id="habits-history">
+                        <!-- History loaded dynamically -->
+                        <li class="history-placeholder">No habits logged yet. Start logging above!</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Challenges View -->
+        <section id="challenges-view" class="view-panel hidden" aria-labelledby="challenges-title">
+            <div class="glass-panel">
+                <h2 id="challenges-title" class="section-title">Gamified Eco-Challenges</h2>
+                <p class="section-sub mb-6">Commit to weekly eco-challenges, complete them, and unlock achievements!</p>
+
+                <div class="challenges-section">
+                    <h3 class="challenges-subtitle">Available Challenges</h3>
+                    <div class="challenges-grid" id="available-challenges">
+                        <!-- Dynamic Available Challenges -->
+                    </div>
+                </div>
+
+                <div class="challenges-section mt-8">
+                    <h3 class="challenges-subtitle">Your Joined Challenges</h3>
+                    <div class="challenges-grid" id="joined-challenges">
+                        <!-- Dynamic Joined Challenges -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Leaderboard View -->
+        <section id="leaderboard-view" class="view-panel hidden" aria-labelledby="leaderboard-title">
+            <div class="glass-panel max-width-800 mx-auto">
+                <h2 id="leaderboard-title" class="section-title text-center">Global Eco Leaderboard</h2>
+                <p class="section-sub text-center mb-6">See where you stand among other sustainability champions.</p>
+
+                <!-- Current User Rank Panel -->
+                <div class="user-rank-box mb-6">
+                    <div>
+                        <span class="rank-label">Your Current Rank</span>
+                        <h3 class="rank-value">#<span id="lead-user-rank">-</span></h3>
+                    </div>
+                    <div>
+                        <span class="rank-label">Total Points</span>
+                        <h3 class="rank-value"><span id="lead-user-points">0</span> pts</h3>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div class="table-responsive">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Rank</th>
+                                <th scope="col">Warrior Name</th>
+                                <th scope="col">Eco Level</th>
+                                <th scope="col">Accumulated Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-rows">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 Carbifyio. Built with 💚 for Virtual Promptwars 2026.</p>
+            <p>Empowering individuals to understand, track, and reduce carbon emissions.</p>
+        </div>
+    </footer>
+
+    <!-- JS Source Files -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

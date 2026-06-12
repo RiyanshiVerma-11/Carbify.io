@@ -1,0 +1,5 @@
+{
+  "name": "carbifyio",
+  "description": "Carbon Footprint Awareness Platform (Python Backend / Vanilla JS Frontend)",
+  "note": "This project has been restructured using a modular Python backend (FastAPI) and a static Vanilla HTML/CSS/JS frontend. The Node dependencies are no longer used. Please use docker-compose to build and start the application. See README.md for instructions."
+}

@@ -1,0 +1,67 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Carbifyio — Docker Compose (Production-ready)
+#
+# Startup order:
+#   backend starts first and exposes /health.
+#   frontend only launches after the backend healthcheck passes.
+#
+# Health-probing uses wget (available in the slim Python base image) to hit
+# the FastAPI /health endpoint.  A 200 OK response means the app is live.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Backend (FastAPI / Uvicorn) ────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: carbify_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/app/data
+      - ./backend:/app/backend
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    healthcheck:
+      # Probe FastAPI's /health endpoint every 15 s.
+      # We use a simple Python script since wget/curl are not included in the slim image.
+      # The command exits with code 0 on a successful HTTP 200 response.
+      test:
+        - "CMD"
+        - "python"
+        - "-c"
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+      interval: 15s    # time between probes
+      timeout: 5s      # max time to wait for a response
+      retries: 5       # mark unhealthy after 5 consecutive failures
+      start_period: 20s  # grace period for uvicorn to start before first check
+
+  # ── Frontend (Nginx) ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: carbify_frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend:
+        # Nginx only starts routing traffic once the backend container is
+        # confirmed healthy by the healthcheck above.  This prevents the
+        # frontend from accepting requests before the API is ready.
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  backend_data:
