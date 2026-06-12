@@ -1,2 +1,2 @@
 # Carbifyio routes package
-__all__ = ["auth", "calculator", "habits", "challenges", "analytics"]
+__all__ = ["analytics", "auth", "calculator", "challenges", "habits"]

@@ -5,15 +5,15 @@ import uuid
 # Ensure the root of the project is in python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from fastapi.testclient import TestClient
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
 
 from backend.app.database import Base, get_db
-from backend.app.main import app
 from backend.app.limiter import limiter
+from backend.app.main import app
 
 # Disable rate limiting for tests
 limiter.enabled = False

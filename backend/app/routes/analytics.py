@@ -26,13 +26,13 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session, aliased
 
-from backend.app.database import get_db
-from backend.app import models, schemas, auth
+from backend.app import auth, models, schemas
 from backend.app.constants import (
     DEFAULT_INACTIVITY_THRESHOLD_DAYS,
     LEADERBOARD_CACHE_TTL_SECONDS,
     YOUDEN_CACHE_TTL_SECONDS,
 )
+from backend.app.database import get_db
 from backend.app.limiter import limiter
 from backend.app.utils.calculations import calculate_co2_breakdown_from_log
 
@@ -49,7 +49,7 @@ router = APIRouter(prefix="/analytics", tags=["Analytics & Insights"])
 def db_cache_get(db: Session, key: str) -> Any:
     """Return the cached value for *key*, or ``None`` if missing/expired."""
     try:
-        now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        now_utc = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         entry = (
             db.query(models.CacheEntry)
             .filter(
@@ -68,7 +68,7 @@ def db_cache_get(db: Session, key: str) -> Any:
 def db_cache_set(db: Session, key: str, value: Any, ttl_seconds: int) -> None:
     """Upsert a cache entry with a TTL-based expiry timestamp."""
     try:
-        now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        now_utc = datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
         expires_at = now_utc + datetime.timedelta(seconds=ttl_seconds)
         val_str = json.dumps(value)
 

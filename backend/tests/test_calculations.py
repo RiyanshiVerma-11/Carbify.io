@@ -11,12 +11,12 @@ from __future__ import annotations
 
 import pytest
 
+from backend.app.config import settings
 from backend.app.utils.calculations import (
     VALID_DIET_TYPES,
     calculate_co2,
     calculate_co2_breakdown,
 )
-from backend.app.config import settings
 
 
 class TestCalculateCo2:
@@ -150,18 +150,18 @@ class TestCalculateCo2Breakdown:
 
     def test_breakdown_sums_to_total(self) -> None:
         """The sum of breakdown values should equal the total from calculate_co2."""
-        kwargs = dict(
-            electricity_kwh=8.0,
-            gas_kwh=4.0,
-            petrol_car_km=15.0,
-            diesel_car_km=5.0,
-            electric_car_km=10.0,
-            public_transit_km=20.0,
-            flights_km=50.0,
-            diet_type="low_meat",
-            waste_kg=2.5,
-            recycling_rate=0.3,
-        )
+        kwargs = {
+            "electricity_kwh": 8.0,
+            "gas_kwh": 4.0,
+            "petrol_car_km": 15.0,
+            "diesel_car_km": 5.0,
+            "electric_car_km": 10.0,
+            "public_transit_km": 20.0,
+            "flights_km": 50.0,
+            "diet_type": "low_meat",
+            "waste_kg": 2.5,
+            "recycling_rate": 0.3,
+        }
         breakdown = calculate_co2_breakdown(**kwargs)
         total = calculate_co2(**kwargs)
         assert total == round(sum(breakdown.values()), 2)

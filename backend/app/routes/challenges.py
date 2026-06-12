@@ -19,10 +19,10 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from backend.app.database import get_db
-from backend.app import models, schemas, auth
-from backend.app.limiter import limiter
+from backend.app import auth, models, schemas
 from backend.app.constants import DEFAULT_CHALLENGES
+from backend.app.database import get_db
+from backend.app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 

@@ -18,11 +18,11 @@ import datetime
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from backend.app import auth, models, schemas
+from backend.app.config import settings
 from backend.app.database import get_db
-from backend.app import models, schemas, auth
 from backend.app.limiter import limiter
 from backend.app.utils.calculations import calculate_co2_from_log
-from backend.app.config import settings
 
 router = APIRouter(prefix="/calculator", tags=["Carbon Calculator"])
 
@@ -174,6 +174,6 @@ def get_latest(
             recycling_rate=0.0,
             total_co2_kg=0.0,
             logged_date=datetime.date.today(),
-            created_at=datetime.datetime.now(datetime.timezone.utc),
+            created_at=datetime.datetime.now(datetime.UTC),
         )
     return latest

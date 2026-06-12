@@ -195,6 +195,7 @@ def test_get_me_with_invalid_token(client) -> None:
 def test_get_me_with_expired_token(client) -> None:
     """Accessing /me with an expired token should return 401."""
     from datetime import timedelta
+
     from backend.app.auth import create_access_token
 
     expired_token = create_access_token(

@@ -153,9 +153,9 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
     True Actives (<=7): 3, 4, 5
     Threshold 6 provides perfect separation (J=1.0).
     """
-    from backend.app.routes.analytics import calculate_optimal_inactivity_threshold
-    from backend.app.database import get_db
     from backend.app import models
+    from backend.app.database import get_db
+    from backend.app.routes.analytics import calculate_optimal_inactivity_threshold
 
     db = next(client.app.dependency_overrides[get_db]())
 

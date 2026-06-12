@@ -20,13 +20,13 @@ import datetime
 
 from sqlalchemy import (
     Column,
-    Integer,
-    String,
-    Float,
-    DateTime,
     Date,
+    DateTime,
+    Float,
     ForeignKey,
     Index,
+    Integer,
+    String,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -189,11 +189,11 @@ class CacheEntry(Base):
 
 __all__ = [
     "POINTS_PER_LEVEL",
-    "User",
-    "EmissionsLog",
-    "HabitsLog",
-    "Habit",
-    "Challenge",
-    "UserChallenge",
     "CacheEntry",
+    "Challenge",
+    "EmissionsLog",
+    "Habit",
+    "HabitsLog",
+    "User",
+    "UserChallenge",
 ]

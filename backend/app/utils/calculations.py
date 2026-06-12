@@ -13,8 +13,8 @@ VALID_DIET_TYPES              -> frozenset  (canonical diet strings)
 
 from __future__ import annotations
 
-from backend.app.config import settings
 from backend.app import models
+from backend.app.config import settings
 
 # Canonical set of valid diet type strings — shared by schemas.py (Literal) and
 # any runtime guard that needs programmatic membership testing.
@@ -170,6 +170,6 @@ __all__ = [
     "VALID_DIET_TYPES",
     "calculate_co2",
     "calculate_co2_breakdown",
-    "calculate_co2_from_log",
     "calculate_co2_breakdown_from_log",
+    "calculate_co2_from_log",
 ]

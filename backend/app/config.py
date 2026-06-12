@@ -14,8 +14,8 @@ Features:
 
 from __future__ import annotations
 
-import secrets
 from functools import lru_cache
+import secrets
 from typing import Any
 
 from pydantic import Field, field_validator, model_validator
@@ -115,7 +115,7 @@ class Settings(BaseSettings):
         return normalised
 
     @model_validator(mode="after")
-    def _validate_secret_key(self) -> "Settings":
+    def _validate_secret_key(self) -> Settings:
         if not self.SECRET_KEY:
             if self.ENV == "production":
                 raise RuntimeError(
@@ -145,4 +145,4 @@ def get_settings() -> Settings:
 #   from backend.app.config import settings
 settings: Settings = get_settings()
 
-__all__ = ["Settings", "settings", "get_settings"]
+__all__ = ["Settings", "get_settings", "settings"]

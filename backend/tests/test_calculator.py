@@ -190,6 +190,7 @@ def test_log_history_pagination(client, auth_headers) -> None:
 def test_log_with_expired_token(client) -> None:
     """Logging emissions with an expired JWT token should return 401."""
     from datetime import timedelta
+
     from backend.app.auth import create_access_token
 
     expired_token = create_access_token(

@@ -12,11 +12,11 @@ Both functions are also importable directly from ``backend.app.utils.calculation
 """
 
 from backend.app.utils.calculations import (
-    calculate_co2_from_log,
     calculate_co2_breakdown_from_log,
+    calculate_co2_from_log,
 )
 
 __all__ = [
-    "calculate_co2_from_log",
     "calculate_co2_breakdown_from_log",
+    "calculate_co2_from_log",
 ]

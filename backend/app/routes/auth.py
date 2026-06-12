@@ -22,7 +22,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.app import models, schemas, auth
+from backend.app import auth, models, schemas
 from backend.app.database import get_db
 from backend.app.limiter import limiter
 

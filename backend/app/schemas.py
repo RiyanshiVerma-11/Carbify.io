@@ -9,9 +9,10 @@ Key type-safety guarantees enforced here:
 
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, List, Dict, Literal
 import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 # ---------------------------------------------------------------------------
 # Domain literal types
@@ -56,7 +57,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: Optional[str] = None
+    username: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -79,7 +80,7 @@ class EmissionsLogCreate(BaseModel):
     )
     waste_kg: float = Field(0.0, ge=0.0)
     recycling_rate: float = Field(0.0, ge=0.0, le=1.0)
-    logged_date: Optional[datetime.date] = None
+    logged_date: datetime.date | None = None
 
 
 class EmissionsLogResponse(BaseModel):
@@ -109,7 +110,7 @@ class EmissionsLogResponse(BaseModel):
 
 class HabitLogCreate(BaseModel):
     habit_name: str  # e.g. "walk_instead_of_drive", "turn_off_ac", "recycle_bottles"
-    logged_date: Optional[datetime.date] = None
+    logged_date: datetime.date | None = None
 
 
 class HabitLogResponse(BaseModel):
@@ -149,10 +150,10 @@ class HabitCreate(BaseModel):
 
 
 class HabitUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=100)
-    category: Optional[str] = Field(None, min_length=3, max_length=50)
-    points: Optional[int] = Field(None, ge=1)
-    co2_saved: Optional[float] = Field(None, ge=0.0)
+    name: str | None = Field(None, min_length=3, max_length=100)
+    category: str | None = Field(None, min_length=3, max_length=50)
+    points: int | None = Field(None, ge=1)
+    co2_saved: float | None = Field(None, ge=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +179,7 @@ class UserChallengeResponse(BaseModel):
     challenge_id: int
     status: str
     joined_date: datetime.date
-    completed_date: Optional[datetime.date] = None
+    completed_date: datetime.date | None = None
     challenge: ChallengeResponse
 
     model_config = ConfigDict(from_attributes=True)
@@ -198,7 +199,7 @@ class LeaderboardUser(BaseModel):
 
 
 class LeaderboardResponse(BaseModel):
-    leaderboard: List[LeaderboardUser]
+    leaderboard: list[LeaderboardUser]
     user_rank: int
     user_points: int
 
@@ -221,8 +222,8 @@ class PersonalizedAnalyticsResponse(BaseModel):
     daily_average_kg: float
     # Strictly typed: keys are category names (str), values are kg CO2 (float).
     # A plain dict would silently accept mixed value types — Dict[str, float] prevents that.
-    weekly_breakdown: Dict[str, float]
-    ai_coach_tips: List[AICoachTip]
+    weekly_breakdown: dict[str, float]
+    ai_coach_tips: list[AICoachTip]
 
 
 class TrendDataPoint(BaseModel):
@@ -241,7 +242,7 @@ class TrendResponse(BaseModel):
     frontend always receives a dense, gapless series.
     """
 
-    trend: List[TrendDataPoint]
+    trend: list[TrendDataPoint]
     period_days: int
 
 
@@ -256,26 +257,26 @@ class PaginationQuery(BaseModel):
 
 
 __all__ = [
+    "AICoachTip",
+    "ChallengeResponse",
     "DietType",
-    "UserCreate",
-    "UserLogin",
-    "UserResponse",
-    "Token",
-    "TokenData",
     "EmissionsLogCreate",
     "EmissionsLogResponse",
+    "HabitCreate",
     "HabitLogCreate",
     "HabitLogResponse",
     "HabitResponse",
-    "HabitCreate",
     "HabitUpdate",
-    "ChallengeResponse",
-    "UserChallengeResponse",
-    "LeaderboardUser",
     "LeaderboardResponse",
-    "AICoachTip",
+    "LeaderboardUser",
+    "PaginationQuery",
     "PersonalizedAnalyticsResponse",
+    "Token",
+    "TokenData",
     "TrendDataPoint",
     "TrendResponse",
-    "PaginationQuery",
+    "UserChallengeResponse",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
 ]

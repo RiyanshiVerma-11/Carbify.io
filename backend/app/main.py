@@ -14,25 +14,23 @@ Responsibilities:
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+import json
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.responses import Response
 
-from backend.app.database import engine, Base
-from backend.app.routes import auth, calculator, habits, challenges, analytics
 from backend.app.config import settings
+from backend.app.database import Base, engine
 from backend.app.limiter import limiter
-
-import json
-import logging
+from backend.app.routes import analytics, auth, calculator, challenges, habits
 
 # ---------------------------------------------------------------------------
 # Structured JSON logging

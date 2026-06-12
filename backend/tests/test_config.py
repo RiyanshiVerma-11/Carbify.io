@@ -65,7 +65,7 @@ class TestSettingsSecretKey:
         """Production mode with a proper SECRET_KEY should not raise."""
         key = "a" * 64  # 32-byte hex string
         s = Settings(ENV="production", SECRET_KEY=key)
-        assert s.SECRET_KEY == key
+        assert key == s.SECRET_KEY
 
 
 class TestSettingsEmissionFactors:
