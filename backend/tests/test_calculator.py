@@ -69,9 +69,7 @@ def test_log_emissions_upsert_same_day(client, auth_headers) -> None:
 
 def test_log_history(client, auth_headers) -> None:
     """After logging once, history should contain exactly one entry."""
-    client.post(
-        "/api/calculator/log", json={"electricity_kwh": 10.0}, headers=auth_headers
-    )
+    client.post("/api/calculator/log", json={"electricity_kwh": 10.0}, headers=auth_headers)
 
     history_resp = client.get("/api/calculator/history", headers=auth_headers)
     assert history_resp.status_code == 200
@@ -171,17 +169,13 @@ def test_log_history_pagination(client, auth_headers) -> None:
     )
 
     # Fetch page 1 limit 1
-    resp_page_1 = client.get(
-        "/api/calculator/history?page=1&limit=1", headers=auth_headers
-    )
+    resp_page_1 = client.get("/api/calculator/history?page=1&limit=1", headers=auth_headers)
     assert resp_page_1.status_code == 200
     assert len(resp_page_1.json()) == 1
     assert resp_page_1.json()[0]["electricity_kwh"] == 20.0  # newest first
 
     # Fetch page 2 limit 1
-    resp_page_2 = client.get(
-        "/api/calculator/history?page=2&limit=1", headers=auth_headers
-    )
+    resp_page_2 = client.get("/api/calculator/history?page=2&limit=1", headers=auth_headers)
     assert resp_page_2.status_code == 200
     assert len(resp_page_2.json()) == 1
     assert resp_page_2.json()[0]["electricity_kwh"] == 10.0

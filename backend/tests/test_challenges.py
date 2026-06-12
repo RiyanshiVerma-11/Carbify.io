@@ -36,9 +36,7 @@ def test_join_challenge_success(client, auth_headers) -> None:
     list_resp = client.get("/api/challenges/list", headers=auth_headers)
     challenge_id = list_resp.json()[0]["id"]
 
-    join_resp = client.post(
-        f"/api/challenges/{challenge_id}/join", headers=auth_headers
-    )
+    join_resp = client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     assert join_resp.status_code == 200
     data = join_resp.json()
     assert data["challenge_id"] == challenge_id
@@ -58,9 +56,7 @@ def test_join_challenge_duplicate_error(client, auth_headers) -> None:
     challenge_id = list_resp.json()[0]["id"]
 
     client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
-    duplicate_resp = client.post(
-        f"/api/challenges/{challenge_id}/join", headers=auth_headers
-    )
+    duplicate_resp = client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     assert duplicate_resp.status_code == 400
     assert "already joined" in duplicate_resp.json()["detail"]
 
@@ -72,9 +68,7 @@ def test_complete_challenge_success(client, auth_headers) -> None:
     challenge_id = challenge["id"]
 
     client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
-    complete_resp = client.post(
-        f"/api/challenges/{challenge_id}/complete", headers=auth_headers
-    )
+    complete_resp = client.post(f"/api/challenges/{challenge_id}/complete", headers=auth_headers)
     assert complete_resp.status_code == 200
     data = complete_resp.json()
     assert data["status"] == "completed"
@@ -105,9 +99,7 @@ def test_complete_challenge_not_joined_error(client, auth_headers) -> None:
     list_resp = client.get("/api/challenges/list", headers=auth_headers)
     challenge_id = list_resp.json()[0]["id"]
 
-    complete_resp = client.post(
-        f"/api/challenges/{challenge_id}/complete", headers=auth_headers
-    )
+    complete_resp = client.post(f"/api/challenges/{challenge_id}/complete", headers=auth_headers)
     assert complete_resp.status_code == 404
     assert "haven't joined" in complete_resp.json()["detail"]
 
@@ -120,9 +112,7 @@ def test_complete_challenge_duplicate_error(client, auth_headers) -> None:
     client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     client.post(f"/api/challenges/{challenge_id}/complete", headers=auth_headers)
 
-    complete_resp = client.post(
-        f"/api/challenges/{challenge_id}/complete", headers=auth_headers
-    )
+    complete_resp = client.post(f"/api/challenges/{challenge_id}/complete", headers=auth_headers)
     assert complete_resp.status_code == 400
     assert "already completed" in complete_resp.json()["detail"]
 
@@ -135,9 +125,7 @@ def test_rejoin_completed_challenge_error(client, auth_headers) -> None:
     client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     client.post(f"/api/challenges/{challenge_id}/complete", headers=auth_headers)
 
-    rejoin_resp = client.post(
-        f"/api/challenges/{challenge_id}/join", headers=auth_headers
-    )
+    rejoin_resp = client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     assert rejoin_resp.status_code == 400
     assert "already completed" in rejoin_resp.json()["detail"]
 
@@ -174,25 +162,19 @@ def test_reactivate_abandoned_challenge(client, auth_headers, db) -> None:
     db.commit()
 
     # Re-join the challenge (should reactivate it)
-    reactivate_resp = client.post(
-        f"/api/challenges/{challenge_id}/join", headers=auth_headers
-    )
+    reactivate_resp = client.post(f"/api/challenges/{challenge_id}/join", headers=auth_headers)
     assert reactivate_resp.status_code == 200
     assert reactivate_resp.json()["status"] == "active"
 
 
 def test_list_challenges_pagination(client, auth_headers) -> None:
     """Challenge list should support page/limit pagination with no overlapping results."""
-    resp_page_1 = client.get(
-        "/api/challenges/list?page=1&limit=2", headers=auth_headers
-    )
+    resp_page_1 = client.get("/api/challenges/list?page=1&limit=2", headers=auth_headers)
     assert resp_page_1.status_code == 200
     data_page_1 = resp_page_1.json()
     assert len(data_page_1) == 2
 
-    resp_page_2 = client.get(
-        "/api/challenges/list?page=2&limit=2", headers=auth_headers
-    )
+    resp_page_2 = client.get("/api/challenges/list?page=2&limit=2", headers=auth_headers)
     assert resp_page_2.status_code == 200
     data_page_2 = resp_page_2.json()
     assert len(data_page_2) == 2

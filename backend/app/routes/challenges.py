@@ -43,9 +43,7 @@ def seed_challenges(db: Session) -> None:
     if existing_count >= len(DEFAULT_CHALLENGES):
         return  # Already seeded — skip all per-row checks
 
-    existing_titles: set[str] = {
-        row[0] for row in db.query(models.Challenge.title).all()
-    }
+    existing_titles: set[str] = {row[0] for row in db.query(models.Challenge.title).all()}
     for dc in DEFAULT_CHALLENGES:
         if dc["title"] not in existing_titles:
             db.add(models.Challenge(**dc))
@@ -80,9 +78,7 @@ def get_user_challenges(
 ) -> list[models.UserChallenge]:
     """Return all challenges the authenticated user has joined."""
     return (
-        db.query(models.UserChallenge)
-        .filter(models.UserChallenge.user_id == current_user.id)
-        .all()
+        db.query(models.UserChallenge).filter(models.UserChallenge.user_id == current_user.id).all()
     )
 
 

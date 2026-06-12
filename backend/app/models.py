@@ -53,12 +53,8 @@ class User(Base):
     emissions_logs = relationship(
         "EmissionsLog", back_populates="user", cascade="all, delete-orphan"
     )
-    habits_logs = relationship(
-        "HabitsLog", back_populates="user", cascade="all, delete-orphan"
-    )
-    challenges = relationship(
-        "UserChallenge", back_populates="user", cascade="all, delete-orphan"
-    )
+    habits_logs = relationship("HabitsLog", back_populates="user", cascade="all, delete-orphan")
+    challenges = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
 
     def add_points(self, points: int) -> None:
         """Add *points* and promote the user's level if a threshold is crossed."""
@@ -99,9 +95,7 @@ class EmissionsLog(Base):
     # Composite index on (user_id, logged_date) — dominant query pattern.
     # Covers: history queries, latest-log lookups, and date-range filters.
     # The individual user_id index above is kept for FK-integrity checks.
-    __table_args__ = (
-        Index("ix_emissions_logs_user_id_logged_date", "user_id", "logged_date"),
-    )
+    __table_args__ = (Index("ix_emissions_logs_user_id_logged_date", "user_id", "logged_date"),)
 
 
 class HabitsLog(Base):
@@ -123,9 +117,7 @@ class HabitsLog(Base):
 
     # Composite index on (user_id, logged_date) — used by the Youden's J-stat
     # CTE query in analytics.py and the duplicate-habit-per-day guard in habits.py.
-    __table_args__ = (
-        Index("ix_habits_logs_user_id_logged_date", "user_id", "logged_date"),
-    )
+    __table_args__ = (Index("ix_habits_logs_user_id_logged_date", "user_id", "logged_date"),)
 
 
 class Habit(Base):
@@ -166,9 +158,7 @@ class UserChallenge(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    challenge_id = Column(
-        Integer, ForeignKey("challenges.id"), nullable=False, index=True
-    )
+    challenge_id = Column(Integer, ForeignKey("challenges.id"), nullable=False, index=True)
     status = Column(String, default="active")  # active, completed, abandoned
     joined_date = Column(Date, default=datetime.date.today)
     completed_date = Column(Date, nullable=True)

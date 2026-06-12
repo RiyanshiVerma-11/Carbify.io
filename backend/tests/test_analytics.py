@@ -160,18 +160,12 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
     db = next(client.app.dependency_overrides[get_db]())
 
     # Clear any cached threshold
-    db.query(models.CacheEntry).filter(
-        models.CacheEntry.key == "youden_threshold"
-    ).delete()
+    db.query(models.CacheEntry).filter(models.CacheEntry.key == "youden_threshold").delete()
     db.commit()
 
     # Create 2 more users to ensure user_count >= 3
-    user2 = models.User(
-        username="testuser2", email="u2@test.com", hashed_password="pwd"
-    )
-    user3 = models.User(
-        username="testuser3", email="u3@test.com", hashed_password="pwd"
-    )
+    user2 = models.User(username="testuser2", email="u2@test.com", hashed_password="pwd")
+    user3 = models.User(username="testuser3", email="u3@test.com", hashed_password="pwd")
     db.add_all([user2, user3])
     db.commit()
 

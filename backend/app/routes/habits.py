@@ -156,9 +156,7 @@ def log_habit(
 # ---------------------------------------------------------------------------
 
 
-@router.post(
-    "/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 def create_habit(
     request: Request,

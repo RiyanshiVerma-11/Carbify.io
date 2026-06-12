@@ -132,9 +132,7 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
 
         # Database agnostic date math
         if db.get_bind().dialect.name == "sqlite":
-            day_diff = func.abs(
-                func.julianday(a.c.logged_date) - func.julianday(b.c.logged_date)
-            )
+            day_diff = func.abs(func.julianday(a.c.logged_date) - func.julianday(b.c.logged_date))
         else:
             day_diff = func.abs(a.c.logged_date - b.c.logged_date)
 
@@ -175,9 +173,7 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
                 best_threshold = t
 
         # Cache the calculated optimal threshold for 12 hours
-        db_cache_set(
-            db, "youden_threshold", best_threshold, ttl_seconds=YOUDEN_CACHE_TTL_SECONDS
-        )
+        db_cache_set(db, "youden_threshold", best_threshold, ttl_seconds=YOUDEN_CACHE_TTL_SECONDS)
         return best_threshold
 
     except Exception as exc:
@@ -292,9 +288,7 @@ def _build_coach_tips(
         )
 
     # Sort categories to surface the dominant emission source
-    sorted_categories = sorted(
-        weekly_breakdown.items(), key=lambda x: x[1], reverse=True
-    )
+    sorted_categories = sorted(weekly_breakdown.items(), key=lambda x: x[1], reverse=True)
     highest_cat, highest_val = sorted_categories[0]
 
     if highest_cat == "transport" and highest_val > 0:
@@ -424,16 +418,11 @@ def get_leaderboard(
 
     if cached_data is None:
         # Only the top-10 rows are fetched — avoids full-table scan
-        top_users = (
-            db.query(models.User).order_by(models.User.points.desc()).limit(10).all()
-        )
+        top_users = db.query(models.User).order_by(models.User.points.desc()).limit(10).all()
         cached_data = [
-            {"username": u.username, "points": u.points, "level": u.level}
-            for u in top_users
+            {"username": u.username, "points": u.points, "level": u.level} for u in top_users
         ]
-        db_cache_set(
-            db, "leaderboard", cached_data, ttl_seconds=LEADERBOARD_CACHE_TTL_SECONDS
-        )
+        db_cache_set(db, "leaderboard", cached_data, ttl_seconds=LEADERBOARD_CACHE_TTL_SECONDS)
 
     leaderboard = [
         schemas.LeaderboardUser(
@@ -445,10 +434,7 @@ def get_leaderboard(
     ]
 
     # Efficient rank: count users with strictly more points + 1
-    user_rank = (
-        db.query(models.User).filter(models.User.points > current_user.points).count()
-        + 1
-    )
+    user_rank = db.query(models.User).filter(models.User.points > current_user.points).count() + 1
 
     return schemas.LeaderboardResponse(
         leaderboard=leaderboard,
