@@ -13,8 +13,6 @@ constraints and catch the resulting IntegrityError.  This:
     condition that existed with the old approach.
 """
 
-from __future__ import annotations
-
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -22,7 +20,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.app import auth, models, schemas
+from backend.app import auth, models
+from backend.app.schemas import Token, UserCreate, UserResponse
 from backend.app.database import get_db
 from backend.app.limiter import limiter
 
@@ -38,13 +37,13 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post(
     "/register",
-    response_model=schemas.UserResponse,
+    response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
 )
 @limiter.limit("5/minute")
 def register(
     request: Request,
-    user_in: schemas.UserCreate,
+    user_in: UserCreate,
     db: Session = Depends(get_db),
 ) -> models.User:
     """Create a new user account.
@@ -87,7 +86,7 @@ def register(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=Token)
 @limiter.limit("5/minute")
 def login(
     request: Request,
@@ -118,7 +117,7 @@ def login(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/me", response_model=schemas.UserResponse)
+@router.get("/me", response_model=UserResponse)
 @limiter.limit("15/minute")
 def get_me(
     request: Request,

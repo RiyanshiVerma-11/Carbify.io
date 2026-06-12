@@ -18,15 +18,21 @@ PUT   /api/habits/{id}     – Update a habit.
 DELETE /api/habits/{id}   – Delete a habit.
 """
 
-from __future__ import annotations
-
 import datetime
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from backend.app import auth, models, schemas
+from backend.app import auth, models
+from backend.app.schemas import (
+    HabitCreate,
+    HabitLogCreate,
+    HabitLogResponse,
+    HabitResponse,
+    HabitUpdate,
+    PaginationQuery,
+)
 from backend.app.constants import DEFAULT_HABITS
 from backend.app.database import get_db
 from backend.app.limiter import limiter
@@ -83,11 +89,11 @@ def list_available_habits(request: Request, db: Session = Depends(get_db)) -> di
 # ---------------------------------------------------------------------------
 
 
-@router.post("/log", response_model=schemas.HabitLogResponse)
+@router.post("/log", response_model=HabitLogResponse)
 @limiter.limit("20/minute")
 def log_habit(
     request: Request,
-    habit_in: schemas.HabitLogCreate,
+    habit_in: HabitLogCreate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> models.HabitsLog:
@@ -156,11 +162,11 @@ def log_habit(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 def create_habit(
     request: Request,
-    habit_in: schemas.HabitCreate,
+    habit_in: HabitCreate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> models.Habit:
@@ -185,12 +191,12 @@ def create_habit(
     return habit
 
 
-@router.put("/{id}", response_model=schemas.HabitResponse)
+@router.put("/{id}", response_model=HabitResponse)
 @limiter.limit("10/minute")
 def update_habit(
     request: Request,
     id: int,
-    habit_in: schemas.HabitUpdate,
+    habit_in: HabitUpdate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> models.Habit:
@@ -241,11 +247,11 @@ def delete_habit(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/history", response_model=list[schemas.HabitLogResponse])
+@router.get("/history", response_model=list[HabitLogResponse])
 @limiter.limit("30/minute")
 def get_habit_history(
     request: Request,
-    pagination: schemas.PaginationQuery = Depends(),
+    pagination: PaginationQuery = Depends(),
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> list[models.HabitsLog]:

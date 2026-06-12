@@ -11,14 +11,13 @@ GET  /api/calculator/history    – Paginated history of logs.
 GET  /api/calculator/latest     – Most recent log entry.
 """
 
-from __future__ import annotations
-
 import datetime
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from backend.app import auth, models, schemas
+from backend.app import auth, models
+from backend.app.schemas import EmissionsLogCreate, EmissionsLogResponse, PaginationQuery
 from backend.app.config import settings
 from backend.app.database import get_db
 from backend.app.limiter import limiter
@@ -43,7 +42,7 @@ def get_constants(
 
 def _update_existing_log(
     existing_log: models.EmissionsLog,
-    log_in: schemas.EmissionsLogCreate,
+    log_in: EmissionsLogCreate,
     db: Session,
 ) -> models.EmissionsLog:
     """Apply new field values from *log_in* to *existing_log*, re-calculate
@@ -64,11 +63,11 @@ def _update_existing_log(
     return existing_log
 
 
-@router.post("/log", response_model=schemas.EmissionsLogResponse)
+@router.post("/log", response_model=EmissionsLogResponse)
 @limiter.limit("20/minute")
 def log_emissions(
     request: Request,
-    log_in: schemas.EmissionsLogCreate,
+    log_in: EmissionsLogCreate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> models.EmissionsLog:
@@ -113,11 +112,11 @@ def log_emissions(
     return new_log
 
 
-@router.get("/history", response_model=list[schemas.EmissionsLogResponse])
+@router.get("/history", response_model=list[EmissionsLogResponse])
 @limiter.limit("30/minute")
 def get_history(
     request: Request,
-    pagination: schemas.PaginationQuery = Depends(),
+    pagination: PaginationQuery = Depends(),
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> list[models.EmissionsLog]:
@@ -136,13 +135,13 @@ def get_history(
     )
 
 
-@router.get("/latest", response_model=schemas.EmissionsLogResponse)
+@router.get("/latest", response_model=EmissionsLogResponse)
 @limiter.limit("30/minute")
 def get_latest(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-) -> models.EmissionsLog | schemas.EmissionsLogResponse:
+) -> models.EmissionsLog | EmissionsLogResponse:
     """Return the most recent emissions log for the authenticated user.
 
     If no log exists yet, a zeroed-out ``EmissionsLogResponse`` is returned so
@@ -159,7 +158,7 @@ def get_latest(
     if not latest:
         # Return a zeroed-out default using the typed response schema —
         # avoids the unsafe `| dict` return type escape hatch.
-        return schemas.EmissionsLogResponse(
+        return EmissionsLogResponse(
             id=0,
             user_id=current_user.id,
             electricity_kwh=0.0,

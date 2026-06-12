@@ -15,8 +15,6 @@ db_cache_get / db_cache_set      – Database-backed key/value cache.
 calculate_optimal_inactivity_threshold – Youden's J-statistic optimiser.
 """
 
-from __future__ import annotations
-
 import datetime
 import json
 import logging
@@ -26,7 +24,15 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session, aliased
 
-from backend.app import auth, models, schemas
+from backend.app import auth, models
+from backend.app.schemas import (
+    AICoachTip,
+    LeaderboardResponse,
+    LeaderboardUser,
+    PersonalizedAnalyticsResponse,
+    TrendDataPoint,
+    TrendResponse,
+)
 from backend.app.constants import (
     DEFAULT_INACTIVITY_THRESHOLD_DAYS,
     LEADERBOARD_CACHE_TTL_SECONDS,
@@ -186,13 +192,13 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
 # ---------------------------------------------------------------------------
 
 
-@router.get("", response_model=schemas.PersonalizedAnalyticsResponse)
+@router.get("", response_model=PersonalizedAnalyticsResponse)
 @limiter.limit("15/minute")
 def get_analytics(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-) -> schemas.PersonalizedAnalyticsResponse:
+) -> PersonalizedAnalyticsResponse:
     """Return personalised analytics for the authenticated user.
 
     Includes total CO₂, carbon saved via habits, per-category breakdown,
@@ -216,7 +222,7 @@ def get_analytics(
 
     # No log yet — return zeroed-out response with a welcome tip
     if not latest_log:
-        return schemas.PersonalizedAnalyticsResponse(
+        return PersonalizedAnalyticsResponse(
             total_co2_kg=0.0,
             carbon_saved_kg=carbon_saved_kg,
             daily_average_kg=0.0,
@@ -227,7 +233,7 @@ def get_analytics(
                 "waste": 0.0,
             },
             ai_coach_tips=[
-                schemas.AICoachTip(
+                AICoachTip(
                     category="general",
                     impact="Medium",
                     savings_kg=5.0,
@@ -244,9 +250,9 @@ def get_analytics(
     total_co2 = round(sum(weekly_breakdown.values()), 2)
 
     # ── AI Coach Tips ────────────────────────────────────────────────────────
-    tips: list[schemas.AICoachTip] = _build_coach_tips(latest_log, weekly_breakdown, db)
+    tips: list[AICoachTip] = _build_coach_tips(latest_log, weekly_breakdown, db)
 
-    return schemas.PersonalizedAnalyticsResponse(
+    return PersonalizedAnalyticsResponse(
         total_co2_kg=total_co2,
         carbon_saved_kg=carbon_saved_kg,
         daily_average_kg=round(total_co2, 2),
@@ -259,13 +265,13 @@ def _build_coach_tips(
     latest_log: models.EmissionsLog,
     weekly_breakdown: dict[str, float],
     db: Session,
-) -> list[schemas.AICoachTip]:
+) -> list[AICoachTip]:
     """Assemble a list of AI Coach tips based on the user's emission profile.
 
     The tip-generation logic analyses the dominant emission category and
     supplements with contextual suggestions until at least one tip is present.
     """
-    tips: list[schemas.AICoachTip] = []
+    tips: list[AICoachTip] = []
 
     # Calculate optimal inactivity threshold using Youden's J-statistic
     optimal_gap_threshold = calculate_optimal_inactivity_threshold(db)
@@ -274,7 +280,7 @@ def _build_coach_tips(
     days_since_last_log = (datetime.date.today() - latest_log.logged_date).days
     if days_since_last_log >= optimal_gap_threshold:
         tips.append(
-            schemas.AICoachTip(
+            AICoachTip(
                 category="general",
                 impact="High",
                 savings_kg=7.5,
@@ -293,7 +299,7 @@ def _build_coach_tips(
 
     if highest_cat == "transport" and highest_val > 0:
         tips.append(
-            schemas.AICoachTip(
+            AICoachTip(
                 category="transport",
                 impact="High",
                 savings_kg=10.5,
@@ -306,7 +312,7 @@ def _build_coach_tips(
         )
     elif highest_cat == "energy" and highest_val > 0:
         tips.append(
-            schemas.AICoachTip(
+            AICoachTip(
                 category="energy",
                 impact="High",
                 savings_kg=8.0,
@@ -319,7 +325,7 @@ def _build_coach_tips(
     elif highest_cat == "food":
         if latest_log.diet_type in ("meat_heavy", "medium_meat"):
             tips.append(
-                schemas.AICoachTip(
+                AICoachTip(
                     category="food",
                     impact="High",
                     savings_kg=4.3,
@@ -331,7 +337,7 @@ def _build_coach_tips(
             )
         else:
             tips.append(
-                schemas.AICoachTip(
+                AICoachTip(
                     category="food",
                     impact="Medium",
                     savings_kg=1.8,
@@ -343,7 +349,7 @@ def _build_coach_tips(
             )
     elif highest_cat == "waste" and highest_val > 0:
         tips.append(
-            schemas.AICoachTip(
+            AICoachTip(
                 category="waste",
                 impact="Medium",
                 savings_kg=3.5,
@@ -358,7 +364,7 @@ def _build_coach_tips(
     if len(tips) < 3:
         if latest_log.electricity_kwh > 10:
             tips.append(
-                schemas.AICoachTip(
+                AICoachTip(
                     category="energy",
                     impact="Medium",
                     savings_kg=1.2,
@@ -370,7 +376,7 @@ def _build_coach_tips(
             )
         if latest_log.petrol_car_km > 20:
             tips.append(
-                schemas.AICoachTip(
+                AICoachTip(
                     category="transport",
                     impact="Medium",
                     savings_kg=1.5,
@@ -383,7 +389,7 @@ def _build_coach_tips(
         # Safety net: always provide at least one actionable tip
         if not tips:
             tips.append(
-                schemas.AICoachTip(
+                AICoachTip(
                     category="general",
                     impact="Low",
                     savings_kg=1.0,
@@ -402,13 +408,13 @@ def _build_coach_tips(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/leaderboard", response_model=schemas.LeaderboardResponse)
+@router.get("/leaderboard", response_model=LeaderboardResponse)
 @limiter.limit("15/minute")
 def get_leaderboard(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-) -> schemas.LeaderboardResponse:
+) -> LeaderboardResponse:
     """Return the global eco-leaderboard (top 10) and the current user's rank.
 
     Results are cached in the database for 60 seconds to prevent full-table
@@ -425,7 +431,7 @@ def get_leaderboard(
         db_cache_set(db, "leaderboard", cached_data, ttl_seconds=LEADERBOARD_CACHE_TTL_SECONDS)
 
     leaderboard = [
-        schemas.LeaderboardUser(
+        LeaderboardUser(
             username=entry["username"],
             points=entry["points"],
             level=entry["level"],
@@ -436,7 +442,7 @@ def get_leaderboard(
     # Efficient rank: count users with strictly more points + 1
     user_rank = db.query(models.User).filter(models.User.points > current_user.points).count() + 1
 
-    return schemas.LeaderboardResponse(
+    return LeaderboardResponse(
         leaderboard=leaderboard,
         user_rank=user_rank,
         user_points=current_user.points,
@@ -448,13 +454,13 @@ def get_leaderboard(
 # ---------------------------------------------------------------------------
 
 
-@router.get("/trend", response_model=schemas.TrendResponse)
+@router.get("/trend", response_model=TrendResponse)
 @limiter.limit("15/minute")
 def get_trend(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-) -> schemas.TrendResponse:
+) -> TrendResponse:
     """Return a gapless 14-day daily CO₂ trend series for the authenticated user.
 
     Each element of ``trend`` represents one calendar day.  Days with no
@@ -483,12 +489,12 @@ def get_trend(
     log_map: dict[datetime.date, float] = {row[0]: round(row[1], 2) for row in logs}
 
     # Generate a gapless series — every day in the window, zero when no log
-    trend: list[schemas.TrendDataPoint] = [
-        schemas.TrendDataPoint(
+    trend: list[TrendDataPoint] = [
+        TrendDataPoint(
             date=start_date + datetime.timedelta(days=i),
             total_co2_kg=log_map.get(start_date + datetime.timedelta(days=i), 0.0),
         )
         for i in range(period_days)
     ]
 
-    return schemas.TrendResponse(trend=trend, period_days=period_days)
+    return TrendResponse(trend=trend, period_days=period_days)

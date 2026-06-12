@@ -90,6 +90,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from backend.app.routes.habits import seed_habits
 
     with SessionLocal() as db:
+        Base.metadata.create_all(bind=db.get_bind())
         seed_challenges(db)
         seed_habits(db)
     yield

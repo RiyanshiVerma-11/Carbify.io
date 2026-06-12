@@ -11,15 +11,14 @@ POST  /api/challenges/{id}/join      – Enrol in a challenge.
 POST  /api/challenges/{id}/complete  – Mark an active challenge complete.
 """
 
-from __future__ import annotations
-
 import datetime
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from backend.app import auth, models, schemas
+from backend.app import auth, models
+from backend.app.schemas import ChallengeResponse, PaginationQuery, UserChallengeResponse
 from backend.app.constants import DEFAULT_CHALLENGES
 from backend.app.database import get_db
 from backend.app.limiter import limiter
@@ -50,11 +49,11 @@ def seed_challenges(db: Session) -> None:
     db.commit()
 
 
-@router.get("/list", response_model=list[schemas.ChallengeResponse])
+@router.get("/list", response_model=list[ChallengeResponse])
 @limiter.limit("30/minute")
 def get_challenges(
     request: Request,
-    pagination: schemas.PaginationQuery = Depends(),
+    pagination: PaginationQuery = Depends(),
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> list[models.Challenge]:
@@ -69,7 +68,7 @@ def get_challenges(
     )
 
 
-@router.get("/user", response_model=list[schemas.UserChallengeResponse])
+@router.get("/user", response_model=list[UserChallengeResponse])
 @limiter.limit("30/minute")
 def get_user_challenges(
     request: Request,
@@ -82,7 +81,7 @@ def get_user_challenges(
     )
 
 
-@router.post("/{id}/join", response_model=schemas.UserChallengeResponse)
+@router.post("/{id}/join", response_model=UserChallengeResponse)
 @limiter.limit("5/minute")
 def join_challenge(
     request: Request,
@@ -150,7 +149,7 @@ def join_challenge(
     return uc
 
 
-@router.post("/{id}/complete", response_model=schemas.UserChallengeResponse)
+@router.post("/{id}/complete", response_model=UserChallengeResponse)
 @limiter.limit("5/minute")
 def complete_challenge(
     request: Request,
