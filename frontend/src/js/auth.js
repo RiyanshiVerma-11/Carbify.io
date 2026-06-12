@@ -1,7 +1,7 @@
 // Authentication Service for Carbifyio
 // v1.1 — BASE_URL must be a relative path so requests route through Nginx proxy.
 
-const BASE_URL = "/api";
+const BASE_URL = "https://carbify-io.onrender.com/api";
 
 export const AuthService = {
     // Save token and user details to localStorage

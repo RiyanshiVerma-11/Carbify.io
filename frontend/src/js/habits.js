@@ -1,7 +1,7 @@
 // Habits & Challenges Service for Carbifyio
 import { AuthService } from "./auth.js";
 
-const BASE_URL = "/api";
+const BASE_URL = "https://carbify-io.onrender.com/api";
 
 export const HabitsService = {
     // Fetch pre-defined habits metrics

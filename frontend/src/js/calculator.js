@@ -2,7 +2,7 @@
 import { AuthService } from "./auth.js";
 import { FALLBACK_EMISSION_FACTORS } from "./constants.js";
 
-const BASE_URL = "/api";
+const BASE_URL = "https://carbify-io.onrender.com/api";
 
 export const CalculatorService = {
     /**

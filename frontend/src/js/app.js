@@ -5,7 +5,7 @@ import { HabitsService } from "./habits.js";
 import { ChartsService } from "./charts.js";
 import { UIService } from "./ui.js";
 
-const BASE_URL = "/api";
+const BASE_URL = "https://carbify-io.onrender.com/api";
 
 document.addEventListener("DOMContentLoaded", () => {
     // Initial State Check
