@@ -11,13 +11,12 @@ instead of the archived python-jose library.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import hashlib
-from typing import Optional
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
-from jwt.exceptions import DecodeError, ExpiredSignatureError, InvalidTokenError
+from jwt import DecodeError, ExpiredSignatureError, InvalidTokenError
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -39,8 +38,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """
-    Return True if *plain_password* matches the bcrypt *hashed_password*.
+    """Return True if *plain_password* matches the bcrypt *hashed_password*.
+
     Passes a SHA-256 pre-hash to bcrypt to prevent 72-character truncation.
     """
     try:
@@ -54,8 +53,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """
-    Return a bcrypt hash of *password* using a freshly generated salt.
+    """Return a bcrypt hash of *password* using a freshly generated salt.
+
     Passes a SHA-256 pre-hash to bcrypt to prevent 72-character truncation.
     """
     pre_hashed = hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -69,11 +68,10 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    data: dict,
-    expires_delta: Optional[timedelta] = None,
+    data: dict[str, str],
+    expires_delta: timedelta | None = None,
 ) -> str:
-    """
-    Encode *data* into a signed JWT with an expiry claim.
+    """Encode *data* into a signed JWT with an expiry claim.
 
     Parameters
     ----------
@@ -103,9 +101,8 @@ def create_access_token(
     )
 
 
-def decode_access_token(token: str) -> dict:
-    """
-    Decode and verify a JWT, returning the payload dict.
+def decode_access_token(token: str) -> dict[str, str]:
+    """Decode and verify a JWT, returning the payload dict.
 
     Raises
     ------
@@ -128,8 +125,7 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> models.User:
-    """
-    FastAPI dependency that validates the Bearer token and returns the
+    """FastAPI dependency that validates the Bearer token and returns the
     authenticated User ORM object.
 
     HTTP 401 is raised for:

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -53,7 +53,7 @@
     <!-- Main Content Area -->
     <main id="main-content" class="app-content">
         <!-- Toast Notification Panel for user action feedback -->
-        <div id="toast-container" class="toast-container" aria-live="polite"></div>
+        <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
         <!-- 1. Authentication View -->
         <section id="auth-view" class="view-panel hidden" aria-labelledby="auth-title">
@@ -193,7 +193,43 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 14-Day Historical CO₂ Trend Chart -->
+            <div class="glass-panel mt-6" aria-labelledby="trend-chart-title">
+                <h3 class="panel-subtitle" id="trend-chart-title">📈 14-Day CO₂ Trend</h3>
+                <p class="section-sub" style="font-size:0.82rem;margin-bottom:0.75rem">
+                    Your daily carbon footprint over the last 2 weeks. Zero on days with no log entry.
+                </p>
+                <div class="chart-container" style="height:220px">
+                    <canvas id="trendChart"
+                        aria-label="14-day daily CO2 emissions trend line chart"
+                        aria-describedby="trend-chart-summary"
+                        role="img">
+                        <!--
+                            WCAG 1.1.1 Non-text Content — accessible fallback table.
+                            Populated dynamically by charts.js on each render.
+                        -->
+                        <table id="trend-chart-table" class="sr-only" aria-label="14-day CO2 trend data table">
+                            <caption>Daily carbon emissions over the last 14 days (kg CO₂)</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Total CO₂ (kg)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trend-chart-table-body">
+                                <tr><td colspan="2">No data logged yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </canvas>
+                    <!-- ARIA live region: announced to screen readers when chart data updates -->
+                    <p id="trend-chart-summary" class="sr-only" aria-live="polite" aria-atomic="true">
+                        No trend data available yet. Log your first emission entry to start tracking.
+                    </p>
+                </div>
+            </div>
         </section>
+
 
         <!-- 3. Calculator View -->
         <section id="calculator-view" class="view-panel hidden" aria-labelledby="calculator-title">
@@ -276,7 +312,7 @@
                     </fieldset>
 
                     <!-- Realtime Estimate Preview -->
-                    <div class="calculator-preview-box">
+                    <div class="calculator-preview-box" role="status" aria-live="polite" aria-atomic="true">
                         <span class="preview-label">Estimated Log Carbon:</span>
                         <span class="preview-value"><span id="live-carbon-preview">3.8</span> kg CO₂e</span>
                     </div>
@@ -350,7 +386,7 @@
 
                 <!-- Leaderboard Table -->
                 <div class="table-responsive">
-                    <table class="leaderboard-table">
+                    <table class="leaderboard-table" aria-label="Global eco-leaderboard ranking">
                         <thead>
                             <tr>
                                 <th scope="col">Rank</th>

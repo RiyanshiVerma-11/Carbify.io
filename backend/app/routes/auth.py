@@ -47,8 +47,7 @@ def register(
     user_in: schemas.UserCreate,
     db: Session = Depends(get_db),
 ) -> models.User:
-    """
-    Create a new user account.
+    """Create a new user account.
 
     The UNIQUE constraints on ``username`` and ``email`` columns are
     relied upon to detect duplicates — a single INSERT attempt is made
@@ -95,9 +94,7 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ) -> dict:
-    """
-    Authenticate with username + password and return a JWT Bearer token.
-    """
+    """Authenticate with username + password and return a JWT Bearer token."""
     user: models.User | None = (
         db.query(models.User)
         .filter(models.User.username == form_data.username)

@@ -1,14 +1,22 @@
-// Main App Router & Orchestrator for Carbifyio SPA
+/**
+ * @file app.js
+ * @description Main application router and orchestrator for the Carbifyio SPA.
+ *
+ * Handles theme initialisation, authentication state routing, navigation
+ * bindings, and data loading for all view panels (dashboard, calculator,
+ * habits, challenges, leaderboard).
+ */
+
 import { AuthService } from "./auth.js";
 import { CalculatorService } from "./calculator.js";
 import { HabitsService } from "./habits.js";
 import { ChartsService } from "./charts.js";
 import { UIService } from "./ui.js";
+import { BASE_URL } from "./constants.js";
 
-const BASE_URL = "https://carbify-io.onrender.com/api";
+// ── Bootstrap ────────────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Initial State Check
     initializeTheme();
     checkAuthStatus();
     setupEventBindings();
@@ -17,7 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
     CalculatorService.fetchConstants();
 });
 
-// 1. Theme Configuration
+// ── 1. Theme Configuration ──────────────────────────────────────────────────
+
+/**
+ * Apply the persisted theme preference (dark/light) on page load.
+ */
 function initializeTheme() {
     const savedTheme = localStorage.getItem("carbify_theme") || "dark";
     const body = document.body;
@@ -34,6 +46,9 @@ function initializeTheme() {
     }
 }
 
+/**
+ * Toggle between dark and light themes and persist the choice.
+ */
 function toggleTheme() {
     const body = document.body;
     const themeIcon = document.getElementById("theme-icon");
@@ -59,7 +74,12 @@ function toggleTheme() {
     }
 }
 
-// 2. Authentication Status Router
+// ── 2. Authentication Status Router ─────────────────────────────────────────
+
+/**
+ * Determine the current authentication state and route the user to
+ * the appropriate view (dashboard or login).
+ */
 async function checkAuthStatus() {
     const navList = document.getElementById("nav-list");
     const authBtn = document.getElementById("auth-action-btn");
@@ -94,6 +114,10 @@ async function checkAuthStatus() {
     }
 }
 
+/**
+ * Update the header stat pills (username, level, points) from a user object.
+ * @param {Object|null} user - User profile object.
+ */
 function updateHeaderStats(user) {
     if (!user) return;
     const dashUser = document.getElementById("dash-username");
@@ -105,13 +129,20 @@ function updateHeaderStats(user) {
     if (dashPoints) dashPoints.textContent = user.points;
 }
 
+/**
+ * Clear the session, destroy chart state, and re-route to login.
+ */
 function forceSignOut() {
     AuthService.clearSession();
     ChartsService.destroyChart();
     checkAuthStatus();
 }
 
-// 3. Event Listeners Setup
+// ── 3. Event Listeners Setup ────────────────────────────────────────────────
+
+/**
+ * Bind all DOM event listeners (navigation, forms, theme toggle, etc.).
+ */
 function setupEventBindings() {
     // Theme Switcher Click
     const themeToggle = document.getElementById("theme-toggle");
@@ -173,15 +204,23 @@ function setupEventBindings() {
     if (formLogin) {
         formLogin.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const username = formLogin.username.value.trim();
-            const password = formLogin.password.value;
+            const usernameInput = formLogin.username;
+            const passwordInput = formLogin.password;
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
 
             try {
                 const user = await AuthService.login(username, password);
+                // Clear any previous error states
+                usernameInput.removeAttribute("aria-invalid");
+                passwordInput.removeAttribute("aria-invalid");
                 UIService.showToast(`Welcome back, ${user.username}!`);
                 formLogin.reset();
                 checkAuthStatus();
             } catch (err) {
+                // Mark both fields invalid — we don't know which field failed
+                usernameInput.setAttribute("aria-invalid", "true");
+                passwordInput.setAttribute("aria-invalid", "true");
                 UIService.showToast(err.message, "error");
             }
         });
@@ -191,16 +230,27 @@ function setupEventBindings() {
     if (formReg) {
         formReg.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const username = formReg.username.value.trim();
-            const email = formReg.email.value.trim();
-            const password = formReg.password.value;
+            const usernameInput = formReg.username;
+            const emailInput    = formReg.email;
+            const passwordInput = formReg.password;
+            const username = usernameInput.value.trim();
+            const email    = emailInput.value.trim();
+            const password = passwordInput.value;
 
             try {
                 await AuthService.register(username, email, password);
+                // Clear error states on success
+                usernameInput.removeAttribute("aria-invalid");
+                emailInput.removeAttribute("aria-invalid");
+                passwordInput.removeAttribute("aria-invalid");
                 UIService.showToast("Registration successful! Please sign in.");
                 formReg.reset();
                 tabLogin.click();
             } catch (err) {
+                // Mark all registration fields invalid for screen readers
+                usernameInput.setAttribute("aria-invalid", "true");
+                emailInput.setAttribute("aria-invalid", "true");
+                passwordInput.setAttribute("aria-invalid", "true");
                 UIService.showToast(err.message, "error");
             }
         });
@@ -299,7 +349,12 @@ function setupEventBindings() {
     }
 }
 
-// 4. View Loader Bindings
+// ── 4. View Loader Bindings ─────────────────────────────────────────────────
+
+/**
+ * Route data-loading to the correct loader for the given view.
+ * @param {string} viewId - The view panel ID being navigated to.
+ */
 function loadViewData(viewId) {
     if (!AuthService.isAuthenticated()) return;
     
@@ -322,19 +377,27 @@ function loadViewData(viewId) {
     }
 }
 
-// Dashboard statistics
+/**
+ * Fetch analytics and trend data in parallel, then render the dashboard
+ * metrics, doughnut chart, trend line chart, and AI Coach tips.
+ */
 async function loadDashboardData() {
     try {
-        const response = await fetch(`${BASE_URL}/analytics`, {
-            headers: AuthService.getAuthHeaders()
-        });
-        const analytics = await response.json();
-        
-        if (response.ok) {
+        const headers = AuthService.getAuthHeaders();
+
+        // Fetch analytics and 14-day trend concurrently for performance
+        const [analyticsRes, trendRes] = await Promise.all([
+            fetch(`${BASE_URL}/analytics`, { headers }),
+            fetch(`${BASE_URL}/analytics/trend`, { headers }),
+        ]);
+
+        if (analyticsRes.ok) {
+            const analytics = await analyticsRes.json();
+
             // Update Dashboard values
             document.getElementById("dash-total-co2").textContent = analytics.total_co2_kg;
             document.getElementById("dash-saved-co2").textContent = analytics.carbon_saved_kg;
-            
+
             const comment = document.getElementById("dash-co2-comment");
             if (comment) {
                 if (analytics.total_co2_kg === 0) {
@@ -347,19 +410,28 @@ async function loadDashboardData() {
                     comment.textContent = "High emissions footprint. Follow Coach suggestions!";
                 }
             }
-            
-            // Draw chart
+
+            // Draw doughnut chart
             ChartsService.renderEmissionsChart(analytics.weekly_breakdown);
-            
+
             // Render tips
             UIService.renderCoachTips(analytics.ai_coach_tips);
+        }
+
+        // Render 14-day trend line chart
+        if (trendRes.ok) {
+            const trendData = await trendRes.json();
+            ChartsService.renderTrendChart(trendData.trend);
         }
     } catch (err) {
         console.error("Dashboard data load error:", err);
     }
 }
 
-// Pre-fill calculator with latest data
+
+/**
+ * Pre-fill the calculator form with the user's most recent emissions log.
+ */
 async function loadCalculatorData() {
     try {
         const latest = await CalculatorService.getLatest();
@@ -389,7 +461,9 @@ async function loadCalculatorData() {
     }
 }
 
-// Dynamic local calculation preview
+/**
+ * Update the live carbon-preview estimate from the current form state.
+ */
 function updateLiveCarbonPreview() {
     const form = document.getElementById("calculator-form");
     if (!form) return;
@@ -401,7 +475,9 @@ function updateLiveCarbonPreview() {
     if (label) label.textContent = estimate;
 }
 
-// Habits Loader
+/**
+ * Fetch and render the habits catalogue and logging history.
+ */
 async function loadHabitsData() {
     try {
         const habits = await HabitsService.getAvailableHabits();
@@ -414,7 +490,9 @@ async function loadHabitsData() {
     }
 }
 
-// Challenges Loader
+/**
+ * Fetch and render the challenges catalogue and user enrolments.
+ */
 async function loadChallengesData() {
     try {
         const challenges = await HabitsService.getChallenges();
@@ -425,7 +503,9 @@ async function loadChallengesData() {
     }
 }
 
-// Leaderboard Loader
+/**
+ * Fetch and render the global eco-leaderboard.
+ */
 async function loadLeaderboardData() {
     try {
         const response = await fetch(`${BASE_URL}/analytics/leaderboard`, {

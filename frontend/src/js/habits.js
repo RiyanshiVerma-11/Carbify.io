@@ -1,10 +1,22 @@
-// Habits & Challenges Service for Carbifyio
+/**
+ * @file habits.js
+ * @description Habits & Challenges service — manages habit logging,
+ *              challenge enrollment/completion, and data fetching.
+ */
+
 import { AuthService } from "./auth.js";
+import { BASE_URL } from "./constants.js";
 
-const BASE_URL = "https://carbify-io.onrender.com/api";
-
+/**
+ * Service for managing sustainable habits and eco-challenges.
+ * @namespace HabitsService
+ */
 export const HabitsService = {
-    // Fetch pre-defined habits metrics
+    /**
+     * Fetch the catalogue of pre-defined sustainable habits.
+     * @returns {Promise<Object>} Habit catalogue keyed by slug.
+     * @throws {Error} If the fetch fails.
+     */
     async getAvailableHabits() {
         try {
             const response = await fetch(`${BASE_URL}/habits/list`, {
@@ -21,7 +33,12 @@ export const HabitsService = {
         }
     },
 
-    // Log a habit completion
+    /**
+     * Log a habit completion for the current day.
+     * @param {string} habitKey - The slug identifier of the habit.
+     * @returns {Promise<Object>} Created habit log entry.
+     * @throws {Error} If logging fails (e.g. duplicate per day).
+     */
     async logHabit(habitKey) {
         try {
             const response = await fetch(`${BASE_URL}/habits/log`, {
@@ -43,7 +60,11 @@ export const HabitsService = {
         }
     },
 
-    // Get habit logging history
+    /**
+     * Get the authenticated user's habit logging history.
+     * @returns {Promise<Array>} Array of habit log entries, newest first.
+     * @throws {Error} If the fetch fails.
+     */
     async getHistory() {
         try {
             const response = await fetch(`${BASE_URL}/habits/history`, {
@@ -60,7 +81,11 @@ export const HabitsService = {
         }
     },
 
-    // Fetch challenges list
+    /**
+     * Fetch the full list of available eco-challenges.
+     * @returns {Promise<Array>} Array of challenge objects.
+     * @throws {Error} If the fetch fails.
+     */
     async getChallenges() {
         try {
             const response = await fetch(`${BASE_URL}/challenges/list`, {
@@ -77,7 +102,11 @@ export const HabitsService = {
         }
     },
 
-    // Fetch user joined challenges
+    /**
+     * Fetch challenges the current user has joined.
+     * @returns {Promise<Array>} Array of user-challenge enrolment objects.
+     * @throws {Error} If the fetch fails.
+     */
     async getUserChallenges() {
         try {
             const response = await fetch(`${BASE_URL}/challenges/user`, {
@@ -94,7 +123,12 @@ export const HabitsService = {
         }
     },
 
-    // Join a challenge
+    /**
+     * Enrol the current user in a challenge.
+     * @param {number} challengeId - The challenge ID to join.
+     * @returns {Promise<Object>} Created enrolment record.
+     * @throws {Error} If joining fails (already joined/completed).
+     */
     async joinChallenge(challengeId) {
         try {
             const response = await fetch(`${BASE_URL}/challenges/${challengeId}/join`, {
@@ -112,7 +146,12 @@ export const HabitsService = {
         }
     },
 
-    // Mark challenge as completed
+    /**
+     * Mark a challenge as completed for the current user.
+     * @param {number} challengeId - The challenge ID to complete.
+     * @returns {Promise<Object>} Updated enrolment record.
+     * @throws {Error} If completion fails (not joined, already complete).
+     */
     async completeChallenge(challengeId) {
         try {
             const response = await fetch(`${BASE_URL}/challenges/${challengeId}/complete`, {

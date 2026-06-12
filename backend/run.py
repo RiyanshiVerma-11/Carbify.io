@@ -1,5 +1,18 @@
-import sys
+"""
+backend/run.py
+─────────────────────────────────────────────────────────────
+Local development server launcher.
+
+Appends the project root to ``sys.path`` so that absolute imports
+(``backend.app.…``) resolve correctly, then starts Uvicorn in
+hot-reload mode on ``0.0.0.0:8000``.
+"""
+
+from __future__ import annotations
+
 import os
+import sys
+
 import uvicorn
 
 # Append parent directory to sys.path to enable 'backend.app...' absolute imports

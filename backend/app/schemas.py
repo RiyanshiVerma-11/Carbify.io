@@ -217,6 +217,26 @@ class PersonalizedAnalyticsResponse(BaseModel):
     ai_coach_tips: List[AICoachTip]
 
 
+class TrendDataPoint(BaseModel):
+    """A single daily data point for the 14-day emissions trend chart."""
+
+    date: datetime.date
+    total_co2_kg: float
+
+
+class TrendResponse(BaseModel):
+    """Response schema for the /api/analytics/trend endpoint.
+
+    Contains an ordered list of (date, total_co2_kg) data points for
+    the last 14 calendar days, used to render the historical line chart.
+    Days with no log entry are included with total_co2_kg = 0.0 so the
+    frontend always receives a dense, gapless series.
+    """
+
+    trend: List[TrendDataPoint]
+    period_days: int
+
+
 # ---------------------------------------------------------------------------
 # Utility / Helper schemas
 # ---------------------------------------------------------------------------
@@ -224,4 +244,30 @@ class PersonalizedAnalyticsResponse(BaseModel):
 class PaginationQuery(BaseModel):
     page: int = Field(1, ge=1, description="Page number")
     limit: int = Field(50, ge=1, le=100, description="Items per page")
+
+
+__all__ = [
+    "DietType",
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
+    "Token",
+    "TokenData",
+    "EmissionsLogCreate",
+    "EmissionsLogResponse",
+    "HabitLogCreate",
+    "HabitLogResponse",
+    "HabitResponse",
+    "HabitCreate",
+    "HabitUpdate",
+    "ChallengeResponse",
+    "UserChallengeResponse",
+    "LeaderboardUser",
+    "LeaderboardResponse",
+    "AICoachTip",
+    "PersonalizedAnalyticsResponse",
+    "TrendDataPoint",
+    "TrendResponse",
+    "PaginationQuery",
+]
 

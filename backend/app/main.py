@@ -1,20 +1,53 @@
+"""
+backend/app/main.py
+─────────────────────────────────────────────────────────────
+Application entry point for the Carbifyio FastAPI backend.
+
+Responsibilities:
+  • Configure structured JSON logging for all application loggers.
+  • Create database tables (synchronous, before traffic).
+  • Register lifespan hooks (seed challenges & habits on startup).
+  • Mount CORS, rate-limiting, and security-header middleware.
+  • Include all API routers under the ``/api`` prefix.
+  • Expose root (``/``) and health-check (``/health``) endpoints.
+"""
+
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
 from backend.app.database import engine, Base
 from backend.app.routes import auth, calculator, habits, challenges, analytics
 from backend.app.config import settings
 from backend.app.limiter import limiter
-import logging
+
 import json
+import logging
+
+
+# ---------------------------------------------------------------------------
+# Structured JSON logging
+# ---------------------------------------------------------------------------
+
 
 class JSONFormatter(logging.Formatter):
+    """Format log records as single-line JSON objects for structured logging."""
+
     def format(self, record: logging.LogRecord) -> str:
-        log_data = {
+        """Serialize *record* into a compact JSON string.
+
+        Fields emitted: ``timestamp``, ``level``, ``logger``, ``message``,
+        and (when present) ``exception``.
+        """
+        log_data: dict[str, str] = {
             "timestamp": self.formatTime(record, self.datefmt or "%Y-%m-%d %H:%M:%S"),
             "level": record.levelname,
             "logger": record.name,
@@ -23,6 +56,7 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_data)
+
 
 # Setup root handler with JSON formatter
 handler = logging.StreamHandler()
@@ -33,9 +67,9 @@ root_logger.handlers = [handler]
 
 # Propagate Uvicorn and FastAPI logs to root to enforce JSON formatting
 for logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"):
-    l = logging.getLogger(logger_name)
-    l.handlers = []
-    l.propagate = True
+    _logger = logging.getLogger(logger_name)
+    _logger.handlers = []
+    _logger.propagate = True
 
 logger = logging.getLogger("carbify_backend")
 logger.info("Initializing database tables and startup events...")
@@ -47,8 +81,11 @@ Base.metadata.create_all(bind=engine)
 # ---------------------------------------------------------------------------
 # Application lifespan (startup / shutdown hooks)
 # ---------------------------------------------------------------------------
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Seed default challenges and habits on application startup."""
     from backend.app.database import SessionLocal
     from backend.app.routes.challenges import seed_challenges
     from backend.app.routes.habits import seed_habits
@@ -86,11 +123,24 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
+
 # ---------------------------------------------------------------------------
 # Security headers middleware (Helmet equivalents for FastAPI)
 # ---------------------------------------------------------------------------
+
+
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
+    """Inject hardened HTTP security headers into every response.
+
+    Headers set:
+      • ``X-Frame-Options: DENY`` — prevents clickjacking.
+      • ``X-Content-Type-Options: nosniff`` — prevents MIME sniffing.
+      • ``X-XSS-Protection: 1; mode=block`` — XSS mitigation.
+      • ``Referrer-Policy`` — limits referrer leakage.
+      • ``Permissions-Policy`` — restricts device API access.
+      • ``Content-Security-Policy`` — allowlists trusted sources.
+    """
     response = await call_next(request)
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -124,8 +174,11 @@ app.include_router(analytics.router,  prefix="/api")
 # ---------------------------------------------------------------------------
 # Root & health endpoints
 # ---------------------------------------------------------------------------
+
+
 @app.get("/")
-def read_root():
+def read_root() -> dict[str, str]:
+    """Return a minimal JSON envelope confirming the API is reachable."""
     return {
         "status": "healthy",
         "app": settings.PROJECT_NAME,
@@ -134,12 +187,14 @@ def read_root():
 
 
 @app.get("/health", tags=["Infrastructure"])
-def health_check():
-    """
-    Lightweight liveness probe consumed by the Docker healthcheck stanza and
+def health_check() -> JSONResponse:
+    """Lightweight liveness probe consumed by the Docker healthcheck stanza and
     container orchestration platforms (e.g. Kubernetes readiness probe).
 
     Returns HTTP 200 with ``{"status": "healthy"}`` as long as the application
     process is running and the event loop is responsive.
     """
     return JSONResponse(content={"status": "healthy"}, status_code=200)
+
+
+__all__ = ["app"]

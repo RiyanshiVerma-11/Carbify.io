@@ -1,18 +1,28 @@
-// Carbon Calculator Service for Carbifyio
+/**
+ * @file calculator.js
+ * @description Carbon Calculator service — fetches emission factors from the
+ *              backend, computes live client-side previews, and submits daily
+ *              logs via the REST API.
+ */
+
 import { AuthService } from "./auth.js";
-import { FALLBACK_EMISSION_FACTORS } from "./constants.js";
+import { BASE_URL, FALLBACK_EMISSION_FACTORS } from "./constants.js";
 
-const BASE_URL = "https://carbify-io.onrender.com/api";
-
+/**
+ * Carbon Calculator service with offline-capable live preview.
+ * @namespace CalculatorService
+ */
 export const CalculatorService = {
     /**
      * Emission factors sourced from the backend.
+     * @type {Object|null}
      */
     emissionFactors: null,
 
     /**
      * Fetch the canonical emission factors from the backend and cache them
-     * locally.
+     * locally.  Falls back to {@link FALLBACK_EMISSION_FACTORS} on failure.
+     * @returns {Promise<void>}
      */
     async fetchConstants() {
         try {
@@ -41,7 +51,9 @@ export const CalculatorService = {
     },
 
     /**
-     * Helper to extract and parse numeric inputs from the calculator form in a DRY manner.
+     * Extract and parse numeric inputs from the calculator form in a DRY manner.
+     * @param {HTMLFormElement} form - The calculator form element.
+     * @returns {Object} Parsed input values keyed by field name.
      */
     getCalculatorInputs(form) {
         if (!form) return {};
@@ -61,6 +73,8 @@ export const CalculatorService = {
 
     /**
      * Compute the estimated daily carbon footprint from form inputs.
+     * @param {Object} inputs - Parsed form inputs from {@link getCalculatorInputs}.
+     * @returns {number} Total CO₂ in kg, rounded to 2 decimal places.
      */
     calculateLive(inputs) {
         if (!this.emissionFactors) {
@@ -93,7 +107,12 @@ export const CalculatorService = {
 
     // ── Backend API calls ─────────────────────────────────────────────────
 
-    /** Submit a completed emissions log to the backend. */
+    /**
+     * Submit a completed emissions log to the backend.
+     * @param {Object} inputs - The emissions log payload.
+     * @returns {Promise<Object>} Saved log data.
+     * @throws {Error} If the log submission fails.
+     */
     async logEmissions(inputs) {
         try {
             const headers = {
@@ -116,7 +135,11 @@ export const CalculatorService = {
         }
     },
 
-    /** Fetch the full emissions log history for the current user. */
+    /**
+     * Fetch the full emissions log history for the current user.
+     * @returns {Promise<Array>} Array of emissions log entries.
+     * @throws {Error} If the history fetch fails.
+     */
     async getHistory() {
         try {
             const response = await fetch(`${BASE_URL}/calculator/history`, {
@@ -133,7 +156,11 @@ export const CalculatorService = {
         }
     },
 
-    /** Fetch the most recent emissions log entry for the current user. */
+    /**
+     * Fetch the most recent emissions log entry for the current user.
+     * @returns {Promise<Object>} Latest emissions log entry.
+     * @throws {Error} If the fetch fails.
+     */
     async getLatest() {
         try {
             const response = await fetch(`${BASE_URL}/calculator/latest`, {

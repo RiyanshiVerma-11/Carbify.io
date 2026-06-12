@@ -164,3 +164,12 @@ def calculate_co2_breakdown_from_log(log: models.EmissionsLog) -> dict[str, floa
         waste_kg=log.waste_kg,
         recycling_rate=log.recycling_rate,
     )
+
+
+__all__ = [
+    "VALID_DIET_TYPES",
+    "calculate_co2",
+    "calculate_co2_breakdown",
+    "calculate_co2_from_log",
+    "calculate_co2_breakdown_from_log",
+]

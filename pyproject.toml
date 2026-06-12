@@ -1,0 +1,108 @@
+# pyproject.toml — Carbifyio project configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# Covers:
+#   • ruff  — fast Python linter (replaces flake8 + isort + pep8)
+#   • black — opinionated code formatter
+#   • pytest — test runner configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+[project]
+name = "carbifyio"
+version = "1.0.0"
+description = "Carbon Footprint Awareness Platform — FastAPI backend"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.urls]
+Homepage = "https://carbify-io-efn8.vercel.app"
+Repository = "https://github.com/RiyanshiVerma-11/Carbify.io"
+
+
+# ─── Ruff linter ──────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+# Directories to lint
+include = ["backend/**/*.py"]
+exclude = [
+    "__pycache__",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (undefined names, unused imports)
+    "I",   # isort (import ordering)
+    "N",   # pep8-naming
+    "UP",  # pyupgrade — enforce modern Python idioms
+    "B",   # flake8-bugbear — common bug patterns
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "E501",  # line-length handled by formatter
+    "B008",  # FastAPI uses function calls in default arguments (Depends())
+    "N805",  # Pydantic v2 validators use cls but ruff flags them
+    "UP007", # allow Optional[X] alongside X | None for Pydantic compat
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+# Test files may use broad assertions and fixtures
+"backend/tests/**" = ["S101", "ANN", "D"]
+
+
+# ─── Black formatter ──────────────────────────────────────────────────────────
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | build
+  | dist
+)/
+'''
+
+
+# ─── Pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",             # verbose output
+    "--tb=short",     # shorter tracebacks
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with -m 'not slow')",
+    "integration: marks integration tests",
+]
+
+
+# ─── Coverage (optional, for CI) ─────────────────────────────────────────────
+[tool.coverage.run]
+source = ["backend/app"]
+omit = ["backend/tests/*", "**/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

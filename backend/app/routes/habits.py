@@ -3,9 +3,19 @@ backend/app/routes/habits.py
 ─────────────────────────────────────────────────────────────
 Habits Tracker routes.
 
-HABIT_METRICS is now imported from backend.app.constants —
-it is no longer duplicated here.  This keeps the route file
-focused on HTTP concerns only (parsing, auth, DB, responses).
+Default habit seed data is imported from ``backend.app.constants``
+(``DEFAULT_HABITS``), keeping this route file focused exclusively
+on HTTP concerns: request parsing, auth enforcement, DB interaction,
+and response serialisation.
+
+Endpoints
+---------
+GET   /api/habits/list     – Full habit catalogue with metadata.
+POST  /api/habits/log      – Log a habit for today (once per day).
+GET   /api/habits/history  – Paginated log history for current user.
+POST  /api/habits/          – Create a custom habit.
+PUT   /api/habits/{id}     – Update a habit.
+DELETE /api/habits/{id}   – Delete a habit.
 """
 
 from __future__ import annotations
@@ -19,69 +29,32 @@ from sqlalchemy.orm import Session
 from backend.app import models, schemas, auth
 from backend.app.database import get_db
 from backend.app.limiter import limiter
+from backend.app.constants import DEFAULT_HABITS
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/habits", tags=["Habits Tracker"])
 
 
-DEFAULT_HABITS = [
-    {
-        "slug": "walk_instead_of_drive",
-        "name": "Walked/cycled instead of driving",
-        "category": "transport",
-        "points": 20,
-        "co2_saved": 1.5,
-    },
-    {
-        "slug": "turn_off_ac",
-        "name": "Turned off AC/heating when away",
-        "category": "energy",
-        "points": 15,
-        "co2_saved": 0.5,
-    },
-    {
-        "slug": "plant_based_day",
-        "name": "Ate fully plant-based/vegan meals today",
-        "category": "food",
-        "points": 25,
-        "co2_saved": 2.0,
-    },
-    {
-        "slug": "recycle_bottles",
-        "name": "Sorted and recycled plastic/glass waste",
-        "category": "waste",
-        "points": 10,
-        "co2_saved": 0.3,
-    },
-    {
-        "slug": "short_shower",
-        "name": "Took a short shower (< 5 minutes)",
-        "category": "energy",
-        "points": 10,
-        "co2_saved": 0.4,
-    },
-    {
-        "slug": "air_dry_clothes",
-        "name": "Air-dried laundry instead of using the dryer",
-        "category": "energy",
-        "points": 15,
-        "co2_saved": 0.8,
-    },
-    {
-        "slug": "unplug_idle",
-        "name": "Unplugged idle electronic appliances",
-        "category": "energy",
-        "points": 10,
-        "co2_saved": 0.2,
-    },
-]
+def seed_habits(db: Session) -> None:
+    """Insert default habits into the database if they don't already exist.
 
+    Uses a count-first optimisation: if the table already contains the
+    expected number of habits, the per-row existence checks are skipped
+    entirely, saving N individual SELECT queries on every warm startup.
+    Seed data is sourced from ``backend.app.constants.DEFAULT_HABITS``.
 
-def seed_habits(db: Session):
+    Called once during application startup via the lifespan hook.
+    """
+    existing_count = db.query(models.Habit).count()
+    if existing_count >= len(DEFAULT_HABITS):
+        return  # Already seeded — skip all per-row checks
+
+    existing_slugs: set[str] = {
+        row[0] for row in db.query(models.Habit.slug).all()
+    }
     for dh in DEFAULT_HABITS:
-        exists = db.query(models.Habit).filter(models.Habit.slug == dh["slug"]).first()
-        if not exists:
+        if dh["slug"] not in existing_slugs:
             db.add(models.Habit(**dh))
     db.commit()
 
@@ -252,7 +225,7 @@ def delete_habit(
     id: int,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-):
+) -> None:
     """Delete a habit from the database."""
     habit = db.query(models.Habit).filter(models.Habit.id == id).first()
     if not habit:
@@ -260,7 +233,7 @@ def delete_habit(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Habit not found",
         )
-    
+
     db.delete(habit)
     db.commit()
 

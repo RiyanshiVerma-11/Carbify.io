@@ -1,15 +1,38 @@
-// UI & Rendering Helper Module for Carbifyio
+/**
+ * @file ui.js
+ * @description UI rendering helpers for Carbifyio — manages view switching,
+ *              toast notifications, and dynamic DOM population for habits,
+ *              challenges, leaderboard, and AI Coach tips.
+ *
+ * All user-supplied strings are sanitised via {@link escapeHtml} before
+ * insertion into the DOM to prevent XSS.
+ */
 
+/**
+ * UI rendering and layout management service.
+ * @namespace UIService
+ */
 export const UIService = {
-    // Helper to escape HTML characters and prevent XSS
+    /**
+     * Escape HTML special characters to prevent XSS injection.
+     * @param {string} text - Raw text to sanitise.
+     * @returns {string} HTML-safe string.
+     */
     escapeHtml(text) {
-        if (!text) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
+        if (text === null || text === undefined) return "";
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     },
 
-    // Show dynamic toast notifications
+    /**
+     * Display a transient toast notification at the bottom-right of the viewport.
+     * @param {string} message - Notification message text.
+     * @param {"success"|"error"} [type="success"] - Visual style of the toast.
+     */
     showToast(message, type = "success") {
         const container = document.getElementById("toast-container");
         if (!container) return;
@@ -40,7 +63,12 @@ export const UIService = {
         }, 4000);
     },
 
-    // Handle view switches in single page application
+    /**
+     * Switch the visible view panel in the single-page application.
+     * Updates navigation button active states and focuses the first
+     * heading for screen-reader announcements.
+     * @param {string} targetViewId - The `id` of the view panel to display.
+     */
     switchView(targetViewId) {
         const views = document.querySelectorAll(".view-panel");
         views.forEach(view => {
@@ -68,7 +96,14 @@ export const UIService = {
         });
     },
 
-    // Render AI Coach suggestions
+    /**
+     * Render AI Coach suggestion cards into the tips container.
+     *
+     * All dynamic strings (category, impact, message) are sanitised via
+     * {@link escapeHtml} to prevent XSS.
+     *
+     * @param {Array<Object>} tips - Array of tip objects from the analytics API.
+     */
     renderCoachTips(tips) {
         const container = document.getElementById("ai-coach-tips-container");
         if (!container) return;
@@ -83,34 +118,44 @@ export const UIService = {
             return;
         }
 
+        const iconMap = {
+            "transport": "🚗",
+            "energy": "💡",
+            "food": "🥗",
+            "waste": "♻️",
+            "general": "🌱"
+        };
+
         tips.forEach(tip => {
             const card = document.createElement("div");
-            card.className = `coach-tip-card ${tip.impact.toLowerCase() === "high" ? "high-impact" : ""}`;
+            const impactLower = (tip.impact || "").toLowerCase();
+            card.className = `coach-tip-card ${impactLower === "high" ? "high-impact" : ""}`;
 
-            const iconMap = {
-                "transport": "🚗",
-                "energy": "💡",
-                "food": "🥗",
-                "waste": "♻️",
-                "general": "🌱"
-            };
             const icon = iconMap[tip.category] || "🌱";
+
+            // Sanitise all dynamic strings before DOM insertion
+            const safeCategory = UIService.escapeHtml(tip.category);
+            const safeImpact = UIService.escapeHtml(tip.impact);
+            const safeMessage = UIService.escapeHtml(tip.message);
 
             card.innerHTML = `
                 <div class="coach-tip-icon" aria-hidden="true">${icon}</div>
                 <div class="coach-tip-body">
                     <div class="coach-tip-header">
-                        <span class="tip-title">${tip.category} suggestion</span>
-                        <span class="tip-impact ${tip.impact.toLowerCase()}">${tip.impact} Impact</span>
+                        <span class="tip-title">${safeCategory} suggestion</span>
+                        <span class="tip-impact ${impactLower}">${safeImpact} Impact</span>
                     </div>
-                    <p class="tip-text">${tip.message}</p>
+                    <p class="tip-text">${safeMessage}</p>
                 </div>
             `;
             container.appendChild(card);
         });
     },
 
-    // Render Habits Logger UI lists
+    /**
+     * Render the habit catalogue as interactive cards with "Log Habit" buttons.
+     * @param {Object} habits - Habit catalogue keyed by slug.
+     */
     renderHabitsList(habits) {
         const container = document.getElementById("habits-list");
         if (!container) return;
@@ -130,6 +175,7 @@ export const UIService = {
         Object.keys(habits).forEach(key => {
             const h = habits[key];
             const icon = iconMap[key] || "🌱";
+            const safeName = UIService.escapeHtml(h.name);
             
             const card = document.createElement("div");
             card.className = "habit-card";
@@ -137,20 +183,23 @@ export const UIService = {
                 <div>
                     <div class="habit-icon-circle" aria-hidden="true">${icon}</div>
                     <div class="habit-details">
-                        <h4>${h.name}</h4>
+                        <h4>${safeName}</h4>
                         <div class="habit-rewards">
                             <span class="reward-tag points">+${h.points} pts</span>
                             <span class="reward-tag co2">-${h.co2_saved} kg CO₂</span>
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-primary btn-small mt-2" data-habit="${key}">Log Habit</button>
+                <button class="btn btn-primary btn-small mt-2" data-habit="${UIService.escapeHtml(key)}" aria-label="Log habit: ${safeName}">Log Habit</button>
             `;
             container.appendChild(card);
         });
     },
 
-    // Render habits history logs
+    /**
+     * Render the habit log history as a chronological list.
+     * @param {Array<Object>} history - Array of habit log entries from the API.
+     */
     renderHabitHistory(history) {
         const container = document.getElementById("habits-history");
         if (!container) return;
@@ -178,7 +227,7 @@ export const UIService = {
             
             const dateObj = new Date(item.logged_date);
             const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-            const displayName = habitNameMap[item.habit_name] || item.habit_name;
+            const displayName = habitNameMap[item.habit_name] || UIService.escapeHtml(item.habit_name);
 
             li.innerHTML = `
                 <div class="history-item-left">
@@ -194,7 +243,11 @@ export const UIService = {
         });
     },
 
-    // Render active and available challenges
+    /**
+     * Render active and available challenges into their respective containers.
+     * @param {Array<Object>} challenges     - All available challenges.
+     * @param {Array<Object>} userChallenges - The current user's enrolments.
+     */
     renderChallenges(challenges, userChallenges) {
         const availableContainer = document.getElementById("available-challenges");
         const joinedContainer = document.getElementById("joined-challenges");
@@ -214,6 +267,9 @@ export const UIService = {
 
         challenges.forEach(c => {
             const status = joinedIdsMap[c.id];
+            const safeTitle = UIService.escapeHtml(c.title);
+            const safeDesc = UIService.escapeHtml(c.description);
+            const safeCategory = UIService.escapeHtml(c.category);
             
             if (status === "active") {
                 activeJoinedCount++;
@@ -222,39 +278,37 @@ export const UIService = {
                 card.innerHTML = `
                     <div>
                         <div class="challenge-header">
-                            <span class="challenge-category">${c.category}</span>
+                            <span class="challenge-category">${safeCategory}</span>
                             <span class="challenge-duration">${c.duration_days} days</span>
                         </div>
-                        <h4 class="challenge-title">${c.title}</h4>
-                        <p class="challenge-desc">${c.description}</p>
+                        <h4 class="challenge-title">${safeTitle}</h4>
+                        <p class="challenge-desc">${safeDesc}</p>
                         <div class="challenge-rewards">
                             <span class="reward-tag points">+${c.points_reward} pts</span>
                             <span class="reward-tag co2">-${c.co2_saving_estimate_kg} kg CO₂</span>
                         </div>
                     </div>
-                    <button class="btn btn-primary btn-small complete-challenge-btn" data-id="${c.id}">Complete Challenge</button>
+                    <button class="btn btn-primary btn-small complete-challenge-btn" data-id="${c.id}" aria-label="Complete challenge: ${safeTitle}">Complete Challenge</button>
                 `;
                 joinedContainer.appendChild(card);
-            } else if (status === "completed") {
-                // Ignore or show inside historical log if needed, let's keep joined challenges clean
-            } else {
+            } else if (status !== "completed") {
                 availableCount++;
                 const card = document.createElement("div");
                 card.className = "challenge-card";
                 card.innerHTML = `
                     <div>
                         <div class="challenge-header">
-                            <span class="challenge-category">${c.category}</span>
+                            <span class="challenge-category">${safeCategory}</span>
                             <span class="challenge-duration">${c.duration_days} days</span>
                         </div>
-                        <h4 class="challenge-title">${c.title}</h4>
-                        <p class="challenge-desc">${c.description}</p>
+                        <h4 class="challenge-title">${safeTitle}</h4>
+                        <p class="challenge-desc">${safeDesc}</p>
                         <div class="challenge-rewards">
                             <span class="reward-tag points">+${c.points_reward} pts</span>
                             <span class="reward-tag co2">-${c.co2_saving_estimate_kg} kg CO₂</span>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-small join-challenge-btn" data-id="${c.id}">Accept Challenge</button>
+                    <button class="btn btn-secondary btn-small join-challenge-btn" data-id="${c.id}" aria-label="Accept challenge: ${safeTitle}">Accept Challenge</button>
                 `;
                 availableContainer.appendChild(card);
             }
@@ -274,7 +328,11 @@ export const UIService = {
         }
     },
 
-    // Render leaderboard entries
+    /**
+     * Render the eco-leaderboard table rows.
+     * @param {Array<Object>} leaderboard    - Sorted array of leaderboard entries.
+     * @param {string}        currentUsername - The authenticated user's username.
+     */
     renderLeaderboard(leaderboard, currentUsername) {
         const tbody = document.getElementById("leaderboard-rows");
         if (!tbody) return;

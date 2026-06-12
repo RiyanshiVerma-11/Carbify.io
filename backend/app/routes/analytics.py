@@ -1,30 +1,60 @@
+"""
+backend/app/routes/analytics.py
+─────────────────────────────────────────────────────────────
+Analytics, AI-Coach insights, and Leaderboard routes.
+
+Endpoints
+---------
+GET  /api/analytics             – Personalised dashboard analytics.
+GET  /api/analytics/trend       – 14-day historical CO₂ trend series.
+GET  /api/analytics/leaderboard – Global eco-leaderboard (top 10).
+
+Internal helpers
+────────────────
+db_cache_get / db_cache_set      – Database-backed key/value cache.
+calculate_optimal_inactivity_threshold – Youden's J-statistic optimiser.
+"""
+
+from __future__ import annotations
+
+import datetime
+import json
+import logging
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, text, Integer
+
 from backend.app.database import get_db
 from backend.app import models, schemas, auth
+from backend.app.constants import (
+    DEFAULT_INACTIVITY_THRESHOLD_DAYS,
+    LEADERBOARD_CACHE_TTL_SECONDS,
+    YOUDEN_CACHE_TTL_SECONDS,
+)
 from backend.app.limiter import limiter
 from backend.app.utils.calculations import calculate_co2_breakdown_from_log
-import datetime
-import time
-import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Insights"])
 
 
-import json
+# ---------------------------------------------------------------------------
+# Database-backed cache helpers
+# ---------------------------------------------------------------------------
 
 
-def db_cache_get(db: Session, key: str) -> any:
+def db_cache_get(db: Session, key: str) -> Any:
+    """Return the cached value for *key*, or ``None`` if missing/expired."""
     try:
         now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         entry = (
             db.query(models.CacheEntry)
             .filter(
                 models.CacheEntry.key == key,
-                models.CacheEntry.expires_at > now_utc
+                models.CacheEntry.expires_at > now_utc,
             )
             .first()
         )
@@ -35,12 +65,13 @@ def db_cache_get(db: Session, key: str) -> any:
     return None
 
 
-def db_cache_set(db: Session, key: str, value: any, ttl_seconds: int) -> None:
+def db_cache_set(db: Session, key: str, value: Any, ttl_seconds: int) -> None:
+    """Upsert a cache entry with a TTL-based expiry timestamp."""
     try:
         now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         expires_at = now_utc + datetime.timedelta(seconds=ttl_seconds)
         val_str = json.dumps(value)
-        
+
         # Check if entry exists
         entry = db.query(models.CacheEntry).filter(models.CacheEntry.key == key).first()
         if entry:
@@ -55,10 +86,15 @@ def db_cache_set(db: Session, key: str, value: any, ttl_seconds: int) -> None:
         logger.error("Error setting DB cache key '%s': %s", key, exc)
 
 
+# ---------------------------------------------------------------------------
+# Youden's J-statistic threshold optimiser
+# ---------------------------------------------------------------------------
+
+
 def calculate_optimal_inactivity_threshold(db: Session) -> int:
-    """
-    Optimize the user inactivity alert threshold (in days) using Youden's J-statistic.
-    J = Sensitivity + Specificity - 1.
+    """Optimize the user inactivity alert threshold (in days) using Youden's J-statistic.
+
+    ``J = Sensitivity + Specificity - 1``.
 
     OPTIMIZED — replaces O(users × logs) N+1 pattern with a single aggregate
     database query that computes consecutive habit-log date gaps using a
@@ -72,7 +108,7 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
     if cached_threshold is not None:
         return cached_threshold
 
-    default_threshold = 5
+    default_threshold = DEFAULT_INACTIVITY_THRESHOLD_DAYS
     try:
         # ── Step 1: check minimum user count before expensive work ───────────
         user_count = db.query(func.count(models.User.id)).scalar()
@@ -80,17 +116,14 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
             return default_threshold
 
         # ── Step 2: single-query gap extraction via self-join on row_number ──
-        # We assign a sequential rank per (user_id) ordered by logged_date DESC,
-        # then join the subquery to itself on rank and rank+1 to obtain consecutive
-        # pairs. We use SQLAlchemy to cleanly handle dialect differences.
         subq = (
             db.query(
                 models.HabitsLog.user_id.label("user_id"),
                 models.HabitsLog.logged_date.label("logged_date"),
                 func.row_number().over(
                     partition_by=models.HabitsLog.user_id,
-                    order_by=models.HabitsLog.logged_date.desc()
-                ).label("rn")
+                    order_by=models.HabitsLog.logged_date.desc(),
+                ).label("rn"),
             )
             .subquery("ranked")
         )
@@ -128,10 +161,10 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
 
         for t in range(2, 11):
             tp  = sum(1 for g in actual_inactive if g >= t)
-            fn  = sum(1 for g in actual_inactive if g <  t)
+            fn  = sum(1 for g in actual_inactive if g < t)
             tpr = tp / (tp + fn) if (tp + fn) > 0 else 0.0
 
-            tn  = sum(1 for g in actual_active if g <  t)
+            tn  = sum(1 for g in actual_active if g < t)
             fp  = sum(1 for g in actual_active if g >= t)
             tnr = tn / (tn + fp) if (tn + fp) > 0 else 0.0
 
@@ -140,13 +173,18 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
                 max_j = j
                 best_threshold = t
 
-        # Cache the calculated optimal threshold for 12 hours (43200 seconds)
-        db_cache_set(db, "youden_threshold", best_threshold, ttl_seconds=43200)
+        # Cache the calculated optimal threshold for 12 hours
+        db_cache_set(db, "youden_threshold", best_threshold, ttl_seconds=YOUDEN_CACHE_TTL_SECONDS)
         return best_threshold
 
     except Exception as exc:
         logger.error("Error calculating Youden's J-statistic threshold: %s", exc)
         return default_threshold
+
+
+# ---------------------------------------------------------------------------
+# Personalised analytics endpoint
+# ---------------------------------------------------------------------------
 
 
 @router.get("", response_model=schemas.PersonalizedAnalyticsResponse)
@@ -155,7 +193,12 @@ def get_analytics(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-):
+) -> schemas.PersonalizedAnalyticsResponse:
+    """Return personalised analytics for the authenticated user.
+
+    Includes total CO₂, carbon saved via habits, per-category breakdown,
+    and AI Coach tips tailored to the user's emission profile.
+    """
     # Retrieve latest emissions log for the authenticated user
     latest_log = (
         db.query(models.EmissionsLog)
@@ -195,6 +238,27 @@ def get_analytics(
     total_co2 = round(sum(weekly_breakdown.values()), 2)
 
     # ── AI Coach Tips ────────────────────────────────────────────────────────
+    tips: list[schemas.AICoachTip] = _build_coach_tips(latest_log, weekly_breakdown, db)
+
+    return schemas.PersonalizedAnalyticsResponse(
+        total_co2_kg=total_co2,
+        carbon_saved_kg=carbon_saved_kg,
+        daily_average_kg=round(total_co2, 2),
+        weekly_breakdown=weekly_breakdown,
+        ai_coach_tips=tips,
+    )
+
+
+def _build_coach_tips(
+    latest_log: models.EmissionsLog,
+    weekly_breakdown: dict[str, float],
+    db: Session,
+) -> list[schemas.AICoachTip]:
+    """Assemble a list of AI Coach tips based on the user's emission profile.
+
+    The tip-generation logic analyses the dominant emission category and
+    supplements with contextual suggestions until at least one tip is present.
+    """
     tips: list[schemas.AICoachTip] = []
 
     # Calculate optimal inactivity threshold using Youden's J-statistic
@@ -324,16 +388,13 @@ def get_analytics(
                 )
             )
 
-    return schemas.PersonalizedAnalyticsResponse(
-        total_co2_kg=total_co2,
-        carbon_saved_kg=carbon_saved_kg,
-        daily_average_kg=round(total_co2, 2),
-        weekly_breakdown=weekly_breakdown,
-        ai_coach_tips=tips,
-    )
+    return tips
 
 
-# ── Leaderboard ──────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# Leaderboard
+# ---------------------------------------------------------------------------
+
 
 @router.get("/leaderboard", response_model=schemas.LeaderboardResponse)
 @limiter.limit("15/minute")
@@ -341,7 +402,12 @@ def get_leaderboard(
     request: Request,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
-):
+) -> schemas.LeaderboardResponse:
+    """Return the global eco-leaderboard (top 10) and the current user's rank.
+
+    Results are cached in the database for 60 seconds to prevent full-table
+    scans on every request.
+    """
     cached_data = db_cache_get(db, "leaderboard")
 
     if cached_data is None:
@@ -356,7 +422,7 @@ def get_leaderboard(
             {"username": u.username, "points": u.points, "level": u.level}
             for u in top_users
         ]
-        db_cache_set(db, "leaderboard", cached_data, ttl_seconds=60)
+        db_cache_set(db, "leaderboard", cached_data, ttl_seconds=LEADERBOARD_CACHE_TTL_SECONDS)
 
     leaderboard = [
         schemas.LeaderboardUser(
@@ -380,3 +446,55 @@ def get_leaderboard(
         user_rank=user_rank,
         user_points=current_user.points,
     )
+
+
+# ---------------------------------------------------------------------------
+# 14-day Emissions Trend
+# ---------------------------------------------------------------------------
+
+
+@router.get("/trend", response_model=schemas.TrendResponse)
+@limiter.limit("15/minute")
+def get_trend(
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+) -> schemas.TrendResponse:
+    """Return a gapless 14-day daily CO₂ trend series for the authenticated user.
+
+    Each element of ``trend`` represents one calendar day.  Days with no
+    emissions log entry are zero-filled so the frontend always receives a
+    dense, continuous series suitable for a line chart without date-gap logic.
+
+    The response is NOT cached (per-user data, tiny query) — 14 rows max.
+    """
+    today = datetime.date.today()
+    period_days = 14
+    start_date = today - datetime.timedelta(days=period_days - 1)
+
+    # Fetch only rows within the 14-day window — at most 14 rows per user
+    logs = (
+        db.query(models.EmissionsLog.logged_date, models.EmissionsLog.total_co2_kg)
+        .filter(
+            models.EmissionsLog.user_id == current_user.id,
+            models.EmissionsLog.logged_date >= start_date,
+            models.EmissionsLog.logged_date <= today,
+        )
+        .order_by(models.EmissionsLog.logged_date.asc())
+        .all()
+    )
+
+    # Build a date → co2 lookup for O(1) access during the dense-fill pass
+    log_map: dict[datetime.date, float] = {row[0]: round(row[1], 2) for row in logs}
+
+    # Generate a gapless series — every day in the window, zero when no log
+    trend: list[schemas.TrendDataPoint] = [
+        schemas.TrendDataPoint(
+            date=start_date + datetime.timedelta(days=i),
+            total_co2_kg=log_map.get(start_date + datetime.timedelta(days=i), 0.0),
+        )
+        for i in range(period_days)
+    ]
+
+    return schemas.TrendResponse(trend=trend, period_days=period_days)
+

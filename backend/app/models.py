@@ -1,13 +1,36 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Index, func
-from sqlalchemy.orm import relationship
-from backend.app.database import Base
+"""
+backend/app/models.py
+─────────────────────────────────────────────────────────────
+SQLAlchemy ORM models for Carbifyio.
+
+Tables
+------
+users            – User accounts with gamification counters.
+emissions_logs   – Daily carbon calculator snapshots.
+habits_logs      – Per-day habit check-off records.
+habits           – Catalogue of available green habits.
+challenges       – Catalogue of gamified eco-challenges.
+user_challenges  – Many-to-many join tracking challenge enrollment.
+cache_entries    – Database-backed key/value cache with TTL.
+"""
+
+from __future__ import annotations
+
 import datetime
 
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, ForeignKey, Index, func
+from sqlalchemy.orm import relationship
 
-POINTS_PER_LEVEL = 100
+from backend.app.database import Base
+
+
+POINTS_PER_LEVEL: int = 100
+"""Number of eco-points required to advance one level."""
 
 
 class User(Base):
+    """Registered user account with gamification state (points, level)."""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -29,14 +52,16 @@ class User(Base):
     )
 
     def add_points(self, points: int) -> None:
+        """Add *points* and promote the user's level if a threshold is crossed."""
         self.points += points
         new_level = (self.points // POINTS_PER_LEVEL) + 1
         if new_level > self.level:
             self.level = new_level
 
 
-
 class EmissionsLog(Base):
+    """Single-day carbon footprint snapshot for a user."""
+
     __tablename__ = "emissions_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -71,6 +96,8 @@ class EmissionsLog(Base):
 
 
 class HabitsLog(Base):
+    """Record of a single habit logged by a user on a given day."""
+
     __tablename__ = "habits_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -93,6 +120,8 @@ class HabitsLog(Base):
 
 
 class Habit(Base):
+    """Catalogue entry for a sustainable daily habit."""
+
     __tablename__ = "habits"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -104,6 +133,8 @@ class Habit(Base):
 
 
 class Challenge(Base):
+    """Catalogue entry for a multi-day eco-challenge."""
+
     __tablename__ = "challenges"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -120,6 +151,8 @@ class Challenge(Base):
 
 
 class UserChallenge(Base):
+    """Many-to-many join tracking a user's enrollment in a challenge."""
+
     __tablename__ = "user_challenges"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -136,8 +169,22 @@ class UserChallenge(Base):
 
 
 class CacheEntry(Base):
+    """Database-backed key/value cache entry with a TTL expiry timestamp."""
+
     __tablename__ = "cache_entries"
 
     key = Column(String, primary_key=True, index=True)
     value = Column(String, nullable=False)  # JSON-encoded string
     expires_at = Column(DateTime, nullable=False)
+
+
+__all__ = [
+    "POINTS_PER_LEVEL",
+    "User",
+    "EmissionsLog",
+    "HabitsLog",
+    "Habit",
+    "Challenge",
+    "UserChallenge",
+    "CacheEntry",
+]
