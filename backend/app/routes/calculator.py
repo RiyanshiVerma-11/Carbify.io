@@ -47,17 +47,17 @@ def _update_existing_log(
 ) -> models.EmissionsLog:
     """Apply new field values from *log_in* to *existing_log*, re-calculate
     total CO₂, commit, and return the refreshed ORM instance."""
-    existing_log.electricity_kwh = log_in.electricity_kwh
-    existing_log.gas_kwh = log_in.gas_kwh
-    existing_log.petrol_car_km = log_in.petrol_car_km
-    existing_log.diesel_car_km = log_in.diesel_car_km
-    existing_log.electric_car_km = log_in.electric_car_km
-    existing_log.public_transit_km = log_in.public_transit_km
-    existing_log.flights_km = log_in.flights_km
-    existing_log.diet_type = log_in.diet_type
-    existing_log.waste_kg = log_in.waste_kg
-    existing_log.recycling_rate = log_in.recycling_rate
-    existing_log.total_co2_kg = calculate_co2_from_log(existing_log)
+    existing_log.electricity_kwh = log_in.electricity_kwh  # type: ignore
+    existing_log.gas_kwh = log_in.gas_kwh  # type: ignore
+    existing_log.petrol_car_km = log_in.petrol_car_km  # type: ignore
+    existing_log.diesel_car_km = log_in.diesel_car_km  # type: ignore
+    existing_log.electric_car_km = log_in.electric_car_km  # type: ignore
+    existing_log.public_transit_km = log_in.public_transit_km  # type: ignore
+    existing_log.flights_km = log_in.flights_km  # type: ignore
+    existing_log.diet_type = log_in.diet_type  # type: ignore
+    existing_log.waste_kg = log_in.waste_kg  # type: ignore
+    existing_log.recycling_rate = log_in.recycling_rate  # type: ignore
+    existing_log.total_co2_kg = calculate_co2_from_log(existing_log)  # type: ignore
     db.commit()
     db.refresh(existing_log)
     return existing_log
@@ -105,7 +105,7 @@ def log_emissions(
         recycling_rate=log_in.recycling_rate,
         logged_date=target_date,
     )
-    new_log.total_co2_kg = calculate_co2_from_log(new_log)
+    new_log.total_co2_kg = calculate_co2_from_log(new_log)  # type: ignore
     db.add(new_log)
     db.commit()
     db.refresh(new_log)
@@ -160,7 +160,7 @@ def get_latest(
         # avoids the unsafe `| dict` return type escape hatch.
         return EmissionsLogResponse(
             id=0,
-            user_id=current_user.id,
+            user_id=int(current_user.id),  # type: ignore
             electricity_kwh=0.0,
             gas_kwh=0.0,
             petrol_car_km=0.0,

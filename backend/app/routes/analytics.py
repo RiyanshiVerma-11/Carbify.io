@@ -22,6 +22,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import Integer, func
+import sqlalchemy.exc
 from sqlalchemy.orm import Session, aliased
 
 from backend.app import auth, models
@@ -66,7 +67,7 @@ def db_cache_get(db: Session, key: str) -> Any:
         )
         if entry:
             return json.loads(entry.value)
-    except Exception as exc:
+    except (sqlalchemy.exc.SQLAlchemyError, json.JSONDecodeError) as exc:
         logger.error("Error reading DB cache key '%s': %s", key, exc)
     return None
 
@@ -87,7 +88,7 @@ def db_cache_set(db: Session, key: str, value: Any, ttl_seconds: int) -> None:
             entry = models.CacheEntry(key=key, value=val_str, expires_at=expires_at)
             db.add(entry)
         db.commit()
-    except Exception as exc:
+    except (sqlalchemy.exc.SQLAlchemyError, json.JSONDecodeError, TypeError) as exc:
         db.rollback()
         logger.error("Error setting DB cache key '%s': %s", key, exc)
 
@@ -182,7 +183,7 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
         db_cache_set(db, "youden_threshold", best_threshold, ttl_seconds=YOUDEN_CACHE_TTL_SECONDS)
         return best_threshold
 
-    except Exception as exc:
+    except sqlalchemy.exc.SQLAlchemyError as exc:
         logger.error("Error calculating Youden's J-statistic threshold: %s", exc)
         return default_threshold
 
