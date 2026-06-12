@@ -25,6 +25,13 @@ from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session, aliased
 
 from backend.app import auth, models
+from backend.app.constants import (
+    DEFAULT_INACTIVITY_THRESHOLD_DAYS,
+    LEADERBOARD_CACHE_TTL_SECONDS,
+    YOUDEN_CACHE_TTL_SECONDS,
+)
+from backend.app.database import get_db
+from backend.app.limiter import limiter
 from backend.app.schemas import (
     AICoachTip,
     LeaderboardResponse,
@@ -33,13 +40,6 @@ from backend.app.schemas import (
     TrendDataPoint,
     TrendResponse,
 )
-from backend.app.constants import (
-    DEFAULT_INACTIVITY_THRESHOLD_DAYS,
-    LEADERBOARD_CACHE_TTL_SECONDS,
-    YOUDEN_CACHE_TTL_SECONDS,
-)
-from backend.app.database import get_db
-from backend.app.limiter import limiter
 from backend.app.utils.calculations import calculate_co2_breakdown_from_log
 
 logger = logging.getLogger(__name__)

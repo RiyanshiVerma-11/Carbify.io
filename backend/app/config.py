@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # ── Security ──────────────────────────────────────────────────────────
     SECRET_KEY: str = Field(
         default="",
-        description="HMAC secret used to sign JWT tokens. " "Must be set explicitly in production.",
+        description="HMAC secret used to sign JWT tokens. Must be set explicitly in production.",
     )
     ALGORITHM: str = Field(default="HS256", description="JWT signing algorithm.")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(

@@ -9,3 +9,4 @@ python-multipart>=0.0.9
 slowapi>=0.1.9
 pytest>=8.1.1
 httpx
+ruff

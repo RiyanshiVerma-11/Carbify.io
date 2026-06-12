@@ -25,6 +25,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from backend.app import auth, models
+from backend.app.constants import DEFAULT_HABITS
+from backend.app.database import get_db
+from backend.app.limiter import limiter
 from backend.app.schemas import (
     HabitCreate,
     HabitLogCreate,
@@ -33,9 +36,6 @@ from backend.app.schemas import (
     HabitUpdate,
     PaginationQuery,
 )
-from backend.app.constants import DEFAULT_HABITS
-from backend.app.database import get_db
-from backend.app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 

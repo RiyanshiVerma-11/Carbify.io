@@ -17,10 +17,10 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from backend.app import auth, models
-from backend.app.schemas import EmissionsLogCreate, EmissionsLogResponse, PaginationQuery
 from backend.app.config import settings
 from backend.app.database import get_db
 from backend.app.limiter import limiter
+from backend.app.schemas import EmissionsLogCreate, EmissionsLogResponse, PaginationQuery
 from backend.app.utils.calculations import calculate_co2_from_log
 
 router = APIRouter(prefix="/calculator", tags=["Carbon Calculator"])

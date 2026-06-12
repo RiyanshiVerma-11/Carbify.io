@@ -108,3 +108,18 @@ omit = ["backend/tests/*", "**/__init__.py"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
+
+# ─── MyPy ─────────────────────────────────────────────────────────────────────
+[tool.mypy]
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "backend.app.models",
+    "backend.app.routes.*",
+    "backend.app.utils.calculations",
+    "backend.app.auth",
+    "backend.app.main"
+]
+ignore_errors = true

@@ -21,9 +21,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.app import auth, models
-from backend.app.schemas import Token, UserCreate, UserResponse
 from backend.app.database import get_db
 from backend.app.limiter import limiter
+from backend.app.schemas import Token, UserCreate, UserResponse
 
 logger = logging.getLogger(__name__)
 
