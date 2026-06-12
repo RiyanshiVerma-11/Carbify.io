@@ -13,6 +13,7 @@ VALID_DIET_TYPES              -> frozenset  (canonical diet strings)
 from __future__ import annotations
 
 from backend.app.config import settings
+from backend.app import models
 
 # Canonical set of valid diet type strings — shared by schemas.py (Literal) and
 # any runtime guard that needs programmatic membership testing.
@@ -131,3 +132,35 @@ def calculate_co2_breakdown(
         "food": food_co2,
         "waste": waste_co2,
     }
+
+
+def calculate_co2_from_log(log: models.EmissionsLog) -> float:
+    """Calculate total carbon emissions in kg directly from an EmissionsLog instance."""
+    return calculate_co2(
+        electricity_kwh=log.electricity_kwh,
+        gas_kwh=log.gas_kwh,
+        petrol_car_km=log.petrol_car_km,
+        diesel_car_km=log.diesel_car_km,
+        electric_car_km=log.electric_car_km,
+        public_transit_km=log.public_transit_km,
+        flights_km=log.flights_km,
+        diet_type=log.diet_type,
+        waste_kg=log.waste_kg,
+        recycling_rate=log.recycling_rate,
+    )
+
+
+def calculate_co2_breakdown_from_log(log: models.EmissionsLog) -> dict[str, float]:
+    """Calculate carbon emissions breakdown in kg directly from an EmissionsLog instance."""
+    return calculate_co2_breakdown(
+        electricity_kwh=log.electricity_kwh,
+        gas_kwh=log.gas_kwh,
+        petrol_car_km=log.petrol_car_km,
+        diesel_car_km=log.diesel_car_km,
+        electric_car_km=log.electric_car_km,
+        public_transit_km=log.public_transit_km,
+        flights_km=log.flights_km,
+        diet_type=log.diet_type,
+        waste_kg=log.waste_kg,
+        recycling_rate=log.recycling_rate,
+    )

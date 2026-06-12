@@ -72,13 +72,18 @@ def test_log_emissions_invalid_diet_type(client, auth_headers):
     assert response.status_code == 422
 
 def test_get_constants(client, auth_headers):
-    """Public constants endpoint should return emission factors."""
+    """Protected constants endpoint should return emission factors when authenticated."""
     response = client.get("/api/calculator/constants", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
     assert "electricity_kwh" in data
     assert "diet_factors" in data
     assert "waste_factor" in data
+
+def test_get_constants_unauthenticated(client):
+    """Protected constants endpoint must return 401 when accessed without a token."""
+    response = client.get("/api/calculator/constants")
+    assert response.status_code == 401
 
 def test_protected_endpoint_without_token(client):
     """Accessing a protected endpoint without a token must return 401."""

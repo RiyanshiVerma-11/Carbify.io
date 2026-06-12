@@ -92,6 +92,17 @@ class HabitsLog(Base):
     )
 
 
+class Habit(Base):
+    __tablename__ = "habits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, nullable=False)
+    category = Column(String, nullable=False)  # transport, energy, food, waste
+    points = Column(Integer, nullable=False)
+    co2_saved = Column(Float, nullable=False)
+
+
 class Challenge(Base):
     __tablename__ = "challenges"
 

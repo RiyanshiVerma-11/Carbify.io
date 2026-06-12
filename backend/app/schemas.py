@@ -121,6 +121,36 @@ class HabitLogResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Habit schemas
+# ---------------------------------------------------------------------------
+
+class HabitResponse(BaseModel):
+    id: int
+    slug: str
+    name: str
+    category: str
+    points: int
+    co2_saved: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HabitCreate(BaseModel):
+    slug: str = Field(..., min_length=3, max_length=50)
+    name: str = Field(..., min_length=3, max_length=100)
+    category: str = Field(..., min_length=3, max_length=50)
+    points: int = Field(..., ge=1)
+    co2_saved: float = Field(..., ge=0.0)
+
+
+class HabitUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=3, max_length=100)
+    category: Optional[str] = Field(None, min_length=3, max_length=50)
+    points: Optional[int] = Field(None, ge=1)
+    co2_saved: Optional[float] = Field(None, ge=0.0)
+
+
+# ---------------------------------------------------------------------------
 # Challenge schemas
 # ---------------------------------------------------------------------------
 

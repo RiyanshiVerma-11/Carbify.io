@@ -5,7 +5,7 @@ import datetime
 from backend.app.database import get_db
 from backend.app import models, schemas, auth
 from backend.app.limiter import limiter
-from backend.app.utils.calculations import calculate_co2
+from backend.app.utils.calculations import calculate_co2_from_log
 from backend.app.config import settings
 
 router = APIRouter(prefix="/calculator", tags=["Carbon Calculator"])
@@ -13,7 +13,10 @@ router = APIRouter(prefix="/calculator", tags=["Carbon Calculator"])
 
 @router.get("/constants")
 @limiter.limit("30/minute")
-def get_constants(request: Request) -> dict:
+def get_constants(
+    request: Request,
+    current_user: models.User = Depends(auth.get_current_user)
+) -> dict:
     return settings.EMISSION_FACTORS
 
 
@@ -33,19 +36,6 @@ def log_emissions(
         models.EmissionsLog.logged_date == target_date
     ).first()
     
-    total_co2 = calculate_co2(
-        electricity_kwh=log_in.electricity_kwh,
-        gas_kwh=log_in.gas_kwh,
-        petrol_car_km=log_in.petrol_car_km,
-        diesel_car_km=log_in.diesel_car_km,
-        electric_car_km=log_in.electric_car_km,
-        public_transit_km=log_in.public_transit_km,
-        flights_km=log_in.flights_km,
-        diet_type=log_in.diet_type,
-        waste_kg=log_in.waste_kg,
-        recycling_rate=log_in.recycling_rate,
-    )
-    
     if existing_log:
         existing_log.electricity_kwh = log_in.electricity_kwh
         existing_log.gas_kwh = log_in.gas_kwh
@@ -57,7 +47,7 @@ def log_emissions(
         existing_log.diet_type = log_in.diet_type
         existing_log.waste_kg = log_in.waste_kg
         existing_log.recycling_rate = log_in.recycling_rate
-        existing_log.total_co2_kg = total_co2
+        existing_log.total_co2_kg = calculate_co2_from_log(existing_log)
         db.commit()
         db.refresh(existing_log)
         return existing_log
@@ -74,9 +64,9 @@ def log_emissions(
             diet_type=log_in.diet_type,
             waste_kg=log_in.waste_kg,
             recycling_rate=log_in.recycling_rate,
-            total_co2_kg=total_co2,
             logged_date=target_date
         )
+        new_log.total_co2_kg = calculate_co2_from_log(new_log)
         db.add(new_log)
         db.commit()
         db.refresh(new_log)

@@ -111,3 +111,44 @@ def test_get_habit_history_pagination(client, auth_headers):
     assert len(resp_page_2.json()) == 1
     assert resp_page_2.json()[0]["habit_name"] == "turn_off_ac"
 
+
+def test_habit_crud_admin(client, auth_headers):
+    # 1. Create a habit
+    new_habit = {
+        "slug": "compost_waste",
+        "name": "Composted organic food waste",
+        "category": "waste",
+        "points": 15,
+        "co2_saved": 0.6,
+    }
+    response = client.post("/api/habits/", json=new_habit, headers=auth_headers)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["slug"] == "compost_waste"
+    assert data["points"] == 15
+    habit_id = data["id"]
+
+    # 2. Duplicate slug should fail
+    response_dup = client.post("/api/habits/", json=new_habit, headers=auth_headers)
+    assert response_dup.status_code == 400
+
+    # 3. Update the habit
+    update_data = {
+        "points": 18,
+        "co2_saved": 0.7,
+    }
+    response_up = client.put(f"/api/habits/{habit_id}", json=update_data, headers=auth_headers)
+    assert response_up.status_code == 200
+    assert response_up.json()["points"] == 18
+    assert response_up.json()["co2_saved"] == 0.7
+
+    # 4. Delete the habit
+    response_del = client.delete(f"/api/habits/{habit_id}", headers=auth_headers)
+    assert response_del.status_code == 204
+
+    # 5. Get list should not contain the deleted habit
+    response_list = client.get("/api/habits/list")
+    assert response_list.status_code == 200
+    assert "compost_waste" not in response_list.json()
+
+

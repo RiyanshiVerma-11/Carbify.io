@@ -37,7 +37,9 @@ def db():
     session = TestingSessionLocal(bind=connection)
     
     from backend.app.routes.challenges import seed_challenges
+    from backend.app.routes.habits import seed_habits
     seed_challenges(session)
+    seed_habits(session)
     
     yield session
     

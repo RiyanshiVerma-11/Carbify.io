@@ -17,13 +17,73 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from backend.app import models, schemas, auth
-from backend.app.constants import HABIT_METRICS
 from backend.app.database import get_db
 from backend.app.limiter import limiter
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/habits", tags=["Habits Tracker"])
+
+
+DEFAULT_HABITS = [
+    {
+        "slug": "walk_instead_of_drive",
+        "name": "Walked/cycled instead of driving",
+        "category": "transport",
+        "points": 20,
+        "co2_saved": 1.5,
+    },
+    {
+        "slug": "turn_off_ac",
+        "name": "Turned off AC/heating when away",
+        "category": "energy",
+        "points": 15,
+        "co2_saved": 0.5,
+    },
+    {
+        "slug": "plant_based_day",
+        "name": "Ate fully plant-based/vegan meals today",
+        "category": "food",
+        "points": 25,
+        "co2_saved": 2.0,
+    },
+    {
+        "slug": "recycle_bottles",
+        "name": "Sorted and recycled plastic/glass waste",
+        "category": "waste",
+        "points": 10,
+        "co2_saved": 0.3,
+    },
+    {
+        "slug": "short_shower",
+        "name": "Took a short shower (< 5 minutes)",
+        "category": "energy",
+        "points": 10,
+        "co2_saved": 0.4,
+    },
+    {
+        "slug": "air_dry_clothes",
+        "name": "Air-dried laundry instead of using the dryer",
+        "category": "energy",
+        "points": 15,
+        "co2_saved": 0.8,
+    },
+    {
+        "slug": "unplug_idle",
+        "name": "Unplugged idle electronic appliances",
+        "category": "energy",
+        "points": 10,
+        "co2_saved": 0.2,
+    },
+]
+
+
+def seed_habits(db: Session):
+    for dh in DEFAULT_HABITS:
+        exists = db.query(models.Habit).filter(models.Habit.slug == dh["slug"]).first()
+        if not exists:
+            db.add(models.Habit(**dh))
+    db.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -33,9 +93,18 @@ router = APIRouter(prefix="/habits", tags=["Habits Tracker"])
 
 @router.get("/list")
 @limiter.limit("30/minute")
-def list_available_habits(request: Request) -> dict:
+def list_available_habits(request: Request, db: Session = Depends(get_db)) -> dict:
     """Return the full habit catalogue with metadata."""
-    return HABIT_METRICS
+    habits = db.query(models.Habit).all()
+    return {
+        h.slug: {
+            "name": h.name,
+            "category": h.category,
+            "points": h.points,
+            "co2_saved": h.co2_saved,
+        }
+        for h in habits
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -56,18 +125,18 @@ def log_habit(
 
     Business rules
     ──────────────
-    • The habit key must exist in HABIT_METRICS.
+    • The habit key must exist in the database.
     • The same habit may only be logged once per calendar day.
     """
     habit_name = habit_in.habit_name
-    if habit_name not in HABIT_METRICS:
+    habit = db.query(models.Habit).filter(models.Habit.slug == habit_name).first()
+    if not habit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unknown habit key: '{habit_name}'",
         )
 
     target_date = habit_in.logged_date or datetime.date.today()
-    metric = HABIT_METRICS[habit_name]
 
     # Duplicate-per-day guard
     existing = (
@@ -82,33 +151,118 @@ def log_habit(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"You have already logged '{metric['name']}' today!",
+            detail=f"You have already logged '{habit.name}' today!",
         )
 
     log = models.HabitsLog(
         user_id=current_user.id,
-        habit_type=metric["category"],
+        habit_type=habit.category,
         habit_name=habit_name,
-        co2_saved_kg=metric["co2_saved"],
-        points_earned=metric["points"],
+        co2_saved_kg=habit.co2_saved,
+        points_earned=habit.points,
         logged_date=target_date,
     )
     db.add(log)
 
     # Update gamification counters in-memory before commit
-    current_user.add_points(metric["points"])
+    current_user.add_points(habit.points)
 
     db.commit()
     logger.info(
         "User '%s' logged habit '%s' — earned %d pts, now level %d.",
         current_user.username,
         habit_name,
-        metric["points"],
+        habit.points,
         current_user.level,
     )
     db.refresh(log)
     db.refresh(current_user)
     return log
+
+
+# ---------------------------------------------------------------------------
+# Dynamic Habit Management CRUD
+# ---------------------------------------------------------------------------
+
+
+@router.post("/", response_model=schemas.HabitResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+def create_habit(
+    request: Request,
+    habit_in: schemas.HabitCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+) -> models.Habit:
+    """Create a new habit dynamically in the database."""
+    existing = db.query(models.Habit).filter(models.Habit.slug == habit_in.slug).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Habit with slug '{habit_in.slug}' already exists.",
+        )
+    
+    habit = models.Habit(
+        slug=habit_in.slug,
+        name=habit_in.name,
+        category=habit_in.category,
+        points=habit_in.points,
+        co2_saved=habit_in.co2_saved,
+    )
+    db.add(habit)
+    db.commit()
+    db.refresh(habit)
+    return habit
+
+
+@router.put("/{id}", response_model=schemas.HabitResponse)
+@limiter.limit("10/minute")
+def update_habit(
+    request: Request,
+    id: int,
+    habit_in: schemas.HabitUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+) -> models.Habit:
+    """Update an existing habit in the database."""
+    habit = db.query(models.Habit).filter(models.Habit.id == id).first()
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Habit not found",
+        )
+    
+    if habit_in.name is not None:
+        habit.name = habit_in.name
+    if habit_in.category is not None:
+        habit.category = habit_in.category
+    if habit_in.points is not None:
+        habit.points = habit_in.points
+    if habit_in.co2_saved is not None:
+        habit.co2_saved = habit_in.co2_saved
+        
+    db.commit()
+    db.refresh(habit)
+    return habit
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("10/minute")
+def delete_habit(
+    request: Request,
+    id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a habit from the database."""
+    habit = db.query(models.Habit).filter(models.Habit.id == id).first()
+    if not habit:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Habit not found",
+        )
+    
+    db.delete(habit)
+    db.commit()
 
 
 # ---------------------------------------------------------------------------

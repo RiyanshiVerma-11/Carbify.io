@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from backend.app.database import engine, Base
 from backend.app.routes import auth, calculator, habits, challenges, analytics
 from backend.app.config import settings
@@ -50,9 +51,11 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     from backend.app.database import SessionLocal
     from backend.app.routes.challenges import seed_challenges
+    from backend.app.routes.habits import seed_habits
 
     with SessionLocal() as db:
         seed_challenges(db)
+        seed_habits(db)
     yield
 
 
@@ -68,6 +71,7 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ---------------------------------------------------------------------------
 # CORS — explicit allowlists, no wildcards

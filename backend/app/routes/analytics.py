@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy.orm import Session, aliased
+from sqlalchemy import func, text, Integer
 from backend.app.database import get_db
 from backend.app import models, schemas, auth
 from backend.app.limiter import limiter
-from backend.app.utils.calculations import calculate_co2_breakdown
+from backend.app.utils.calculations import calculate_co2_breakdown_from_log
 import datetime
 import time
 import logging
@@ -19,7 +19,7 @@ import json
 
 def db_cache_get(db: Session, key: str) -> any:
     try:
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         entry = (
             db.query(models.CacheEntry)
             .filter(
@@ -37,7 +37,7 @@ def db_cache_get(db: Session, key: str) -> any:
 
 def db_cache_set(db: Session, key: str, value: any, ttl_seconds: int) -> None:
     try:
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         expires_at = now_utc + datetime.timedelta(seconds=ttl_seconds)
         val_str = json.dumps(value)
         
@@ -81,33 +81,36 @@ def calculate_optimal_inactivity_threshold(db: Session) -> int:
 
         # ── Step 2: single-query gap extraction via self-join on row_number ──
         # We assign a sequential rank per (user_id) ordered by logged_date DESC,
-        # then join the table to itself on rank and rank+1 to obtain consecutive
-        # pairs.  julianday() computes the day-delta entirely inside the DB.
-        gap_sql = text(
-            """
-            WITH ranked AS (
-                SELECT
-                    user_id,
-                    logged_date,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY user_id
-                        ORDER BY logged_date DESC
-                    ) AS rn
-                FROM habits_logs
+        # then join the subquery to itself on rank and rank+1 to obtain consecutive
+        # pairs. We use SQLAlchemy to cleanly handle dialect differences.
+        subq = (
+            db.query(
+                models.HabitsLog.user_id.label("user_id"),
+                models.HabitsLog.logged_date.label("logged_date"),
+                func.row_number().over(
+                    partition_by=models.HabitsLog.user_id,
+                    order_by=models.HabitsLog.logged_date.desc()
+                ).label("rn")
             )
-            SELECT CAST(
-                ABS(julianday(a.logged_date) - julianday(b.logged_date))
-                AS INTEGER
-            ) AS gap_days
-            FROM ranked a
-            JOIN ranked b
-                ON a.user_id = b.user_id
-               AND a.rn = b.rn - 1
-            WHERE gap_days > 0
-            """
+            .subquery("ranked")
         )
-        result = db.execute(gap_sql)
-        gaps: list[int] = [row[0] for row in result if row[0] is not None]
+
+        a = aliased(subq, name="a")
+        b = aliased(subq, name="b")
+
+        # Database agnostic date math
+        if db.get_bind().dialect.name == "sqlite":
+            day_diff = func.abs(func.julianday(a.c.logged_date) - func.julianday(b.c.logged_date))
+        else:
+            day_diff = func.abs(a.c.logged_date - b.c.logged_date)
+
+        gaps_query = (
+            db.query(func.cast(day_diff, Integer))
+            .join(b, (a.c.user_id == b.c.user_id) & (a.c.rn == b.c.rn - 1))
+            .filter(a.c.logged_date != b.c.logged_date)
+        )
+
+        gaps: list[int] = [row[0] for row in gaps_query.all() if row[0] is not None]
 
         if not gaps:
             return default_threshold
@@ -188,18 +191,7 @@ def get_analytics(
         )
 
     # ── Use the shared utility for breakdown — no duplicated factor math ────
-    weekly_breakdown: dict[str, float] = calculate_co2_breakdown(
-        electricity_kwh=latest_log.electricity_kwh,
-        gas_kwh=latest_log.gas_kwh,
-        petrol_car_km=latest_log.petrol_car_km,
-        diesel_car_km=latest_log.diesel_car_km,
-        electric_car_km=latest_log.electric_car_km,
-        public_transit_km=latest_log.public_transit_km,
-        flights_km=latest_log.flights_km,
-        diet_type=latest_log.diet_type,
-        waste_kg=latest_log.waste_kg,
-        recycling_rate=latest_log.recycling_rate,
-    )
+    weekly_breakdown: dict[str, float] = calculate_co2_breakdown_from_log(latest_log)
     total_co2 = round(sum(weekly_breakdown.values()), 2)
 
     # ── AI Coach Tips ────────────────────────────────────────────────────────

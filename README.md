@@ -66,7 +66,7 @@ graph TD
 ### Modular Components:
 1.  **`/backend`**: Python service powered by **FastAPI** + **SQLAlchemy** + **Pydantic**.
 2.  **`/frontend`**: High-end client application using semantic **HTML5**, modular **Vanilla Javascript**, and a custom **Glassmorphism CSS Design System** (no Tailwind bloat).
-3.  **`docker-compose.yml`**: Full-stack orchestrator separating container networking.
+3.  **`docker-compose.yml`**: Full-stack orchestrator separating container networking, equipped with robust healthchecks to ensure correct service startup order (frontend waits for backend readiness).
 
 ### 🗄️ Database Schema & Models
 The application persists data using SQLite via SQLAlchemy ORM. The relational schema is structured as follows:
