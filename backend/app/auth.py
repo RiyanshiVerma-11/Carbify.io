@@ -10,9 +10,9 @@ instead of the archived python-jose library.
 
 from __future__ import annotations
 
-import typing
 from datetime import UTC, datetime, timedelta
 import hashlib
+import typing
 
 import bcrypt
 from fastapi import Depends, HTTPException, status

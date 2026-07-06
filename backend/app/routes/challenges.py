@@ -182,6 +182,11 @@ def complete_challenge(
 
     # Award points
     challenge = db.query(models.Challenge).filter(models.Challenge.id == id).first()
+    if not challenge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Challenge database configuration error: challenge not found",
+        )
     current_user.add_points(challenge.points_reward)
 
     db.commit()

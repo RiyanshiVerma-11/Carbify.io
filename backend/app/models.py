@@ -18,7 +18,6 @@ from __future__ import annotations
 import datetime
 
 from sqlalchemy import (
-    Column,
     Date,
     DateTime,
     Float,
@@ -28,7 +27,7 @@ from sqlalchemy import (
     String,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.database import Base
 
@@ -41,19 +40,19 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    points = Column(Integer, default=0)
-    level = Column(Integer, default=1)
-    created_at = Column(DateTime, default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+    points: Mapped[int] = mapped_column(Integer, default=0)
+    level: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
-    emissions_logs = relationship(
+    emissions_logs: Mapped[list[EmissionsLog]] = relationship(
         "EmissionsLog", back_populates="user", cascade="all, delete-orphan",
     )
-    habits_logs = relationship("HabitsLog", back_populates="user", cascade="all, delete-orphan")
-    challenges = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
+    habits_logs: Mapped[list[HabitsLog]] = relationship("HabitsLog", back_populates="user", cascade="all, delete-orphan")
+    challenges: Mapped[list[UserChallenge]] = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
 
     def add_points(self, points: int) -> None:
         """Add *points* and promote the user's level if a threshold is crossed."""
@@ -67,28 +66,28 @@ class EmissionsLog(Base):
 
     __tablename__ = "emissions_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    electricity_kwh = Column(Float, default=0.0)
-    gas_kwh = Column(Float, default=0.0)
+    electricity_kwh: Mapped[float] = mapped_column(Float, default=0.0)
+    gas_kwh: Mapped[float] = mapped_column(Float, default=0.0)
 
-    petrol_car_km = Column(Float, default=0.0)
-    diesel_car_km = Column(Float, default=0.0)
-    electric_car_km = Column(Float, default=0.0)
-    public_transit_km = Column(Float, default=0.0)
-    flights_km = Column(Float, default=0.0)
+    petrol_car_km: Mapped[float] = mapped_column(Float, default=0.0)
+    diesel_car_km: Mapped[float] = mapped_column(Float, default=0.0)
+    electric_car_km: Mapped[float] = mapped_column(Float, default=0.0)
+    public_transit_km: Mapped[float] = mapped_column(Float, default=0.0)
+    flights_km: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Values are constrained by the DietType Literal in schemas.py
-    diet_type = Column(String, default="vegetarian")
-    waste_kg = Column(Float, default=0.0)
-    recycling_rate = Column(Float, default=0.0)  # 0.0–1.0
+    diet_type: Mapped[str] = mapped_column(String, default="vegetarian")
+    waste_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    recycling_rate: Mapped[float] = mapped_column(Float, default=0.0)  # 0.0–1.0
 
-    total_co2_kg = Column(Float, default=0.0)
-    logged_date = Column(Date, default=datetime.date.today, index=True)
-    created_at = Column(DateTime, default=func.now())
+    total_co2_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    logged_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today, index=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
-    user = relationship("User", back_populates="emissions_logs")
+    user: Mapped[User] = relationship("User", back_populates="emissions_logs")
 
     # Composite index on (user_id, logged_date) — dominant query pattern.
     # Covers: history queries, latest-log lookups, and date-range filters.
@@ -101,17 +100,17 @@ class HabitsLog(Base):
 
     __tablename__ = "habits_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    habit_type = Column(String, nullable=False)  # transport, energy, food, waste
-    habit_name = Column(String, nullable=False)  # e.g. "walk_instead_of_drive"
-    co2_saved_kg = Column(Float, default=0.0)
-    points_earned = Column(Integer, default=0)
-    logged_date = Column(Date, default=datetime.date.today, index=True)
-    created_at = Column(DateTime, default=func.now())
+    habit_type: Mapped[str] = mapped_column(String, nullable=False)  # transport, energy, food, waste
+    habit_name: Mapped[str] = mapped_column(String, nullable=False)  # e.g. "walk_instead_of_drive"
+    co2_saved_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    points_earned: Mapped[int] = mapped_column(Integer, default=0)
+    logged_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today, index=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
-    user = relationship("User", back_populates="habits_logs")
+    user: Mapped[User] = relationship("User", back_populates="habits_logs")
 
     # Composite index on (user_id, logged_date) — used by the Youden's J-stat
     # CTE query in analytics.py and the duplicate-habit-per-day guard in habits.py.
@@ -123,12 +122,12 @@ class Habit(Base):
 
     __tablename__ = "habits"
 
-    id = Column(Integer, primary_key=True, index=True)
-    slug = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)
-    category = Column(String, nullable=False)  # transport, energy, food, waste
-    points = Column(Integer, nullable=False)
-    co2_saved = Column(Float, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)  # transport, energy, food, waste
+    points: Mapped[int] = mapped_column(Integer, nullable=False)
+    co2_saved: Mapped[float] = mapped_column(Float, nullable=False)
 
 
 class Challenge(Base):
@@ -136,15 +135,15 @@ class Challenge(Base):
 
     __tablename__ = "challenges"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False, unique=True)
-    description = Column(String, nullable=False)
-    points_reward = Column(Integer, nullable=False)
-    co2_saving_estimate_kg = Column(Float, default=0.0)
-    category = Column(String, nullable=False)  # transport, energy, food, waste
-    duration_days = Column(Integer, default=7)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    points_reward: Mapped[int] = mapped_column(Integer, nullable=False)
+    co2_saving_estimate_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    category: Mapped[str] = mapped_column(String, nullable=False)  # transport, energy, food, waste
+    duration_days: Mapped[int] = mapped_column(Integer, default=7)
 
-    user_challenges = relationship(
+    user_challenges: Mapped[list[UserChallenge]] = relationship(
         "UserChallenge", back_populates="challenge", cascade="all, delete-orphan",
     )
 
@@ -154,15 +153,15 @@ class UserChallenge(Base):
 
     __tablename__ = "user_challenges"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    challenge_id = Column(Integer, ForeignKey("challenges.id"), nullable=False, index=True)
-    status = Column(String, default="active")  # active, completed, abandoned
-    joined_date = Column(Date, default=datetime.date.today)
-    completed_date = Column(Date, nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    challenge_id: Mapped[int] = mapped_column(Integer, ForeignKey("challenges.id"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String, default="active")  # active, completed, abandoned
+    joined_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today)
+    completed_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)
 
-    user = relationship("User", back_populates="challenges")
-    challenge = relationship("Challenge", back_populates="user_challenges")
+    user: Mapped[User] = relationship("User", back_populates="challenges")
+    challenge: Mapped[Challenge] = relationship("Challenge", back_populates="user_challenges")
 
 
 class CacheEntry(Base):
@@ -170,9 +169,9 @@ class CacheEntry(Base):
 
     __tablename__ = "cache_entries"
 
-    key = Column(String, primary_key=True, index=True)
-    value = Column(String, nullable=False)  # JSON-encoded string
-    expires_at = Column(DateTime, nullable=False)
+    key: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    value: Mapped[str] = mapped_column(String, nullable=False)  # JSON-encoded string
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
 
 
 __all__ = [
