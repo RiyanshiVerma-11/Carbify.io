@@ -49,10 +49,16 @@ class User(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
     emissions_logs: Mapped[list[EmissionsLog]] = relationship(
-        "EmissionsLog", back_populates="user", cascade="all, delete-orphan",
+        "EmissionsLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
-    habits_logs: Mapped[list[HabitsLog]] = relationship("HabitsLog", back_populates="user", cascade="all, delete-orphan")
-    challenges: Mapped[list[UserChallenge]] = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
+    habits_logs: Mapped[list[HabitsLog]] = relationship(
+        "HabitsLog", back_populates="user", cascade="all, delete-orphan"
+    )
+    challenges: Mapped[list[UserChallenge]] = relationship(
+        "UserChallenge", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def add_points(self, points: int) -> None:
         """Add *points* and promote the user's level if a threshold is crossed."""
@@ -67,7 +73,9 @@ class EmissionsLog(Base):
     __tablename__ = "emissions_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
 
     electricity_kwh: Mapped[float] = mapped_column(Float, default=0.0)
     gas_kwh: Mapped[float] = mapped_column(Float, default=0.0)
@@ -84,7 +92,9 @@ class EmissionsLog(Base):
     recycling_rate: Mapped[float] = mapped_column(Float, default=0.0)  # 0.0–1.0
 
     total_co2_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    logged_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today, index=True)
+    logged_date: Mapped[datetime.date] = mapped_column(
+        Date, default=datetime.date.today, index=True
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
     user: Mapped[User] = relationship("User", back_populates="emissions_logs")
@@ -101,13 +111,19 @@ class HabitsLog(Base):
     __tablename__ = "habits_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
 
-    habit_type: Mapped[str] = mapped_column(String, nullable=False)  # transport, energy, food, waste
+    habit_type: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # transport, energy, food, waste
     habit_name: Mapped[str] = mapped_column(String, nullable=False)  # e.g. "walk_instead_of_drive"
     co2_saved_kg: Mapped[float] = mapped_column(Float, default=0.0)
     points_earned: Mapped[int] = mapped_column(Integer, default=0)
-    logged_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today, index=True)
+    logged_date: Mapped[datetime.date] = mapped_column(
+        Date, default=datetime.date.today, index=True
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=func.now())
 
     user: Mapped[User] = relationship("User", back_populates="habits_logs")
@@ -144,7 +160,9 @@ class Challenge(Base):
     duration_days: Mapped[int] = mapped_column(Integer, default=7)
 
     user_challenges: Mapped[list[UserChallenge]] = relationship(
-        "UserChallenge", back_populates="challenge", cascade="all, delete-orphan",
+        "UserChallenge",
+        back_populates="challenge",
+        cascade="all, delete-orphan",
     )
 
 
@@ -154,8 +172,12 @@ class UserChallenge(Base):
     __tablename__ = "user_challenges"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    challenge_id: Mapped[int] = mapped_column(Integer, ForeignKey("challenges.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False, index=True
+    )
+    challenge_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("challenges.id"), nullable=False, index=True
+    )
     status: Mapped[str] = mapped_column(String, default="active")  # active, completed, abandoned
     joined_date: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today)
     completed_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True)

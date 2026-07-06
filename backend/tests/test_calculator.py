@@ -94,12 +94,16 @@ def test_log_emissions_negative_boundary(client, auth_headers) -> None:
 def test_log_emissions_recycling_rate_boundaries(client, auth_headers) -> None:
     """Recycling rate outside [0.0, 1.0] must be rejected by Pydantic."""
     response_high = client.post(
-        "/api/calculator/log", json={"recycling_rate": 1.5}, headers=auth_headers,
+        "/api/calculator/log",
+        json={"recycling_rate": 1.5},
+        headers=auth_headers,
     )
     assert response_high.status_code == 422
 
     response_low = client.post(
-        "/api/calculator/log", json={"recycling_rate": -0.1}, headers=auth_headers,
+        "/api/calculator/log",
+        json={"recycling_rate": -0.1},
+        headers=auth_headers,
     )
     assert response_low.status_code == 422
 
@@ -143,13 +147,17 @@ def test_protected_endpoint_without_token(client) -> None:
 def test_log_emissions_recycling_rate_exact_boundaries(client, auth_headers) -> None:
     """Boundary values 0.0 and 1.0 for recycling_rate should be accepted."""
     response_zero = client.post(
-        "/api/calculator/log", json={"recycling_rate": 0.0}, headers=auth_headers,
+        "/api/calculator/log",
+        json={"recycling_rate": 0.0},
+        headers=auth_headers,
     )
     assert response_zero.status_code == 200
     assert response_zero.json()["recycling_rate"] == 0.0
 
     response_one = client.post(
-        "/api/calculator/log", json={"recycling_rate": 1.0}, headers=auth_headers,
+        "/api/calculator/log",
+        json={"recycling_rate": 1.0},
+        headers=auth_headers,
     )
     assert response_one.status_code == 200
     assert response_one.json()["recycling_rate"] == 1.0
