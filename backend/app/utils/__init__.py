@@ -1,5 +1,4 @@
-"""
-backend/app/utils
+"""backend/app/utils
 ─────────────────────────────────────────────────────────────
 Utility package — shared calculation helpers used by multiple route modules.
 

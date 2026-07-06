@@ -12,6 +12,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 vi.mock("./constants.js", () => ({
     BASE_URL: "/api",
     FALLBACK_EMISSION_FACTORS: {},
+    handleResponse: async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || `Request failed with status ${response.status}`);
+        }
+        return data;
+    },
 }));
 
 const { AuthService } = await import("./auth.js");

@@ -57,3 +57,37 @@ export const FALLBACK_EMISSION_FACTORS = {
     },
     waste_factor: 0.45
 };
+
+/**
+ * Safely parses the response as JSON or throws a clean error if the response is HTML/text.
+ * Useful for handling Vercel 404 pages or Render cold starts/gateway timeouts.
+ * @param {Response} response - The Fetch API Response object.
+ * @returns {Promise<Object>} The parsed JSON data.
+ * @throws {Error} Detailed error message.
+ */
+export async function handleResponse(response) {
+    let data;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+        try {
+            data = await response.json();
+        } catch (err) {
+            if (!response.ok) {
+                throw new Error(`Server error (${response.status}). Failed to parse response.`);
+            }
+            throw err;
+        }
+    } else {
+        const statusText = response.statusText || `Status ${response.status}`;
+        if (!response.ok) {
+            throw new Error(`Server error (${statusText}). The backend may be starting up or temporarily offline.`);
+        }
+        throw new Error("Invalid response format from server (expected JSON).");
+    }
+
+    if (!response.ok) {
+        throw new Error(data.detail || `Request failed with status ${response.status}`);
+    }
+    return data;
+}
+

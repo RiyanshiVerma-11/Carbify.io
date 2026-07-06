@@ -100,7 +100,7 @@ def auth_headers(client):
         data={"username": username, "password": password},
     )
     token = login_resp.json()["access_token"]
-    yield {"Authorization": f"Bearer {token}"}
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture(scope="function")

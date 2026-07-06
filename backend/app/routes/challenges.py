@@ -1,5 +1,4 @@
-"""
-backend/app/routes/challenges.py
+"""backend/app/routes/challenges.py
 ─────────────────────────────────────────────────────────────
 Eco-Challenge routes — browse, join, and complete challenges.
 
@@ -118,19 +117,18 @@ def join_challenge(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You have already joined this active challenge!",
             )
-        elif existing.status == "completed":
+        if existing.status == "completed":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You have already completed this challenge!",
             )
-        else:
-            # Re-activate if abandoned
-            existing.status = "active"
-            existing.joined_date = datetime.date.today()
-            existing.completed_date = None
-            db.commit()
-            db.refresh(existing)
-            return existing
+        # Re-activate if abandoned
+        existing.status = "active"
+        existing.joined_date = datetime.date.today()
+        existing.completed_date = None
+        db.commit()
+        db.refresh(existing)
+        return existing
 
     logger.info(
         "User '%s' successfully joined challenge '%s' (ID: %d)",

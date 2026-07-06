@@ -1,5 +1,4 @@
-"""
-backend/app/routes/auth.py
+"""backend/app/routes/auth.py
 ─────────────────────────────────────────────────────────────
 Authentication routes — register, login, and "me".
 

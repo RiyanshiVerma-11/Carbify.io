@@ -1,5 +1,4 @@
-"""
-backend/app/database.py
+"""backend/app/database.py
 ─────────────────────────────────────────────────────────────
 SQLAlchemy engine, session factory, and declarative base.
 

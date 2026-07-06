@@ -12,7 +12,7 @@ import { CalculatorService } from "./calculator.js";
 import { HabitsService } from "./habits.js";
 import { ChartsService } from "./charts.js";
 import { UIService } from "./ui.js";
-import { BASE_URL } from "./constants.js";
+import { BASE_URL, handleResponse } from "./constants.js";
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -413,40 +413,37 @@ async function loadDashboardData() {
             fetch(`${BASE_URL}/analytics/trend`, { headers }),
         ]);
 
-        if (analyticsRes.ok) {
-            const analytics = await analyticsRes.json();
+        const analytics = await handleResponse(analyticsRes);
 
-            // Update Dashboard values
-            document.getElementById("dash-total-co2").textContent = analytics.total_co2_kg;
-            document.getElementById("dash-saved-co2").textContent = analytics.carbon_saved_kg;
+        // Update Dashboard values
+        document.getElementById("dash-total-co2").textContent = analytics.total_co2_kg;
+        document.getElementById("dash-saved-co2").textContent = analytics.carbon_saved_kg;
 
-            const comment = document.getElementById("dash-co2-comment");
-            if (comment) {
-                if (analytics.total_co2_kg === 0) {
-                    comment.textContent = "Log calculations to assess status.";
-                } else if (analytics.total_co2_kg < 8.0) {
-                    comment.textContent = "Super low footprint! Excellent job!";
-                } else if (analytics.total_co2_kg < 15.0) {
-                    comment.textContent = "Average footprint. Try logging daily habits to reduce.";
-                } else {
-                    comment.textContent = "High emissions footprint. Follow Coach suggestions!";
-                }
+        const comment = document.getElementById("dash-co2-comment");
+        if (comment) {
+            if (analytics.total_co2_kg === 0) {
+                comment.textContent = "Log calculations to assess status.";
+            } else if (analytics.total_co2_kg < 8.0) {
+                comment.textContent = "Super low footprint! Excellent job!";
+            } else if (analytics.total_co2_kg < 15.0) {
+                comment.textContent = "Average footprint. Try logging daily habits to reduce.";
+            } else {
+                comment.textContent = "High emissions footprint. Follow Coach suggestions!";
             }
-
-            // Draw doughnut chart
-            ChartsService.renderEmissionsChart(analytics.weekly_breakdown);
-
-            // Render tips
-            UIService.renderCoachTips(analytics.ai_coach_tips);
         }
+
+        // Draw doughnut chart
+        ChartsService.renderEmissionsChart(analytics.weekly_breakdown);
+
+        // Render tips
+        UIService.renderCoachTips(analytics.ai_coach_tips);
 
         // Render 14-day trend line chart
-        if (trendRes.ok) {
-            const trendData = await trendRes.json();
-            ChartsService.renderTrendChart(trendData.trend);
-        }
+        const trendData = await handleResponse(trendRes);
+        ChartsService.renderTrendChart(trendData.trend);
     } catch (err) {
         console.error("Dashboard data load error:", err);
+        UIService.showToast(err.message, "error");
     }
 }
 
@@ -537,18 +534,17 @@ async function loadLeaderboardData() {
         const response = await fetch(`${BASE_URL}/analytics/leaderboard`, {
             headers: AuthService.getAuthHeaders()
         });
-        const leaderboardData = await response.json();
+        const leaderboardData = await handleResponse(response);
         
-        if (response.ok) {
-            const user = AuthService.getLocalUser();
-            const currentUsername = user ? user.username : "";
-            
-            document.getElementById("lead-user-rank").textContent = leaderboardData.user_rank;
-            document.getElementById("lead-user-points").textContent = leaderboardData.user_points;
-            
-            UIService.renderLeaderboard(leaderboardData.leaderboard, currentUsername);
-        }
+        const user = AuthService.getLocalUser();
+        const currentUsername = user ? user.username : "";
+        
+        document.getElementById("lead-user-rank").textContent = leaderboardData.user_rank;
+        document.getElementById("lead-user-points").textContent = leaderboardData.user_points;
+        
+        UIService.renderLeaderboard(leaderboardData.leaderboard, currentUsername);
     } catch (err) {
         console.error("Leaderboard data error:", err);
+        UIService.showToast(err.message, "error");
     }
 }

@@ -6,7 +6,7 @@
  */
 
 import { AuthService } from "./auth.js";
-import { BASE_URL, FALLBACK_EMISSION_FACTORS } from "./constants.js";
+import { BASE_URL, FALLBACK_EMISSION_FACTORS, handleResponse } from "./constants.js";
 
 /**
  * Carbon Calculator service with offline-capable live preview.
@@ -29,15 +29,10 @@ export const CalculatorService = {
             const response = await fetch(`${BASE_URL}/calculator/constants`, {
                 headers: AuthService.getAuthHeaders()
             });
-            if (response.ok) {
-                const data = await response.json();
-                this.emissionFactors = data;
-            } else {
-                console.warn("CalculatorService.fetchConstants: non-OK response, using fallback factors.");
-                this._applyFallbackFactors();
-            }
+            const data = await handleResponse(response);
+            this.emissionFactors = data;
         } catch (error) {
-            console.error("CalculatorService.fetchConstants: network error, using fallback factors.", error);
+            console.error("CalculatorService.fetchConstants error, using fallback factors:", error);
             this._applyFallbackFactors();
         }
     },
@@ -126,11 +121,7 @@ export const CalculatorService = {
                 headers,
                 body: JSON.stringify(inputs)
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to log emissions");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("CalculatorService.logEmissions error:", error);
             throw error;
@@ -147,11 +138,7 @@ export const CalculatorService = {
             const response = await fetch(`${BASE_URL}/calculator/history`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch history");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("CalculatorService.getHistory error:", error);
             throw error;
@@ -168,11 +155,7 @@ export const CalculatorService = {
             const response = await fetch(`${BASE_URL}/calculator/latest`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch latest log");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("CalculatorService.getLatest error:", error);
             throw error;

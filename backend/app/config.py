@@ -1,5 +1,4 @@
-"""
-backend/app/config.py
+"""backend/app/config.py
 ─────────────────────────────────────────────────────────────
 Application configuration via pydantic-settings (Pydantic v2).
 
@@ -23,8 +22,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """
-    All fields are populated from environment variables first,
+    """All fields are populated from environment variables first,
     then fall back to the declared defaults.  The .env file
     at ``backend/.env`` (relative to the process cwd) is read
     automatically.
@@ -117,7 +115,7 @@ class Settings(BaseSettings):
             if self.ENV == "production":
                 raise RuntimeError(
                     "CRITICAL SECURITY VIOLATION: SECRET_KEY must be set "
-                    "explicitly in production mode — refusing to start."
+                    "explicitly in production mode — refusing to start.",
                 )
             # Development / testing: auto-generate a cryptographically-safe key.
             # This key is ephemeral (regenerated on every restart) which is
@@ -128,8 +126,7 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """
-    Return a cached singleton Settings instance.
+    """Return a cached singleton Settings instance.
 
     Using lru_cache means .env is read only once per process,
     and all call-sites share the same object — zero overhead after

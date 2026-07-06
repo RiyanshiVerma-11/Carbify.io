@@ -1,5 +1,4 @@
-"""
-backend/app/auth.py
+"""backend/app/auth.py
 ─────────────────────────────────────────────────────────────
 Authentication utilities — password hashing, JWT token
 creation/verification, and the FastAPI dependency that resolves
@@ -11,6 +10,7 @@ instead of the archived python-jose library.
 
 from __future__ import annotations
 
+import typing
 from datetime import UTC, datetime, timedelta
 import hashlib
 
@@ -71,7 +71,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    data: dict[str, str],
+    data: dict[str, typing.Any],
     expires_delta: timedelta | None = None,
 ) -> str:
     """Encode *data* into a signed JWT with an expiry claim.
@@ -87,6 +87,7 @@ def create_access_token(
     -------
     str
         Compact, URL-safe JWT string.
+
     """
     to_encode = data.copy()
     expire = datetime.now(UTC) + (
@@ -111,6 +112,7 @@ def decode_access_token(token: str) -> dict[str, str]:
     ------
     jwt.exceptions.InvalidTokenError (or subclass)
         On any verification failure (expired, bad signature, malformed).
+
     """
     return jwt.decode(
         token,

@@ -5,7 +5,7 @@
  */
 
 import { AuthService } from "./auth.js";
-import { BASE_URL } from "./constants.js";
+import { BASE_URL, handleResponse } from "./constants.js";
 
 /**
  * Service for managing sustainable habits and eco-challenges.
@@ -22,11 +22,7 @@ export const HabitsService = {
             const response = await fetch(`${BASE_URL}/habits/list`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch habits list");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Fetch habits list error:", error);
             throw error;
@@ -49,11 +45,7 @@ export const HabitsService = {
                 },
                 body: JSON.stringify({ habit_name: habitKey })
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to log habit");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Log habit error:", error);
             throw error;
@@ -70,11 +62,7 @@ export const HabitsService = {
             const response = await fetch(`${BASE_URL}/habits/history`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch habit history");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Fetch habit history error:", error);
             throw error;
@@ -91,11 +79,7 @@ export const HabitsService = {
             const response = await fetch(`${BASE_URL}/challenges/list`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch challenges");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Fetch challenges error:", error);
             throw error;
@@ -112,11 +96,7 @@ export const HabitsService = {
             const response = await fetch(`${BASE_URL}/challenges/user`, {
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to fetch user challenges");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Fetch user challenges error:", error);
             throw error;
@@ -135,11 +115,7 @@ export const HabitsService = {
                 method: "POST",
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to join challenge");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Join challenge error:", error);
             throw error;
@@ -158,11 +134,7 @@ export const HabitsService = {
                 method: "POST",
                 headers: AuthService.getAuthHeaders()
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Failed to complete challenge");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Complete challenge error:", error);
             throw error;

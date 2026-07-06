@@ -1,5 +1,4 @@
-"""
-backend/app/routes/analytics.py
+"""backend/app/routes/analytics.py
 ─────────────────────────────────────────────────────────────
 Analytics, AI-Coach insights, and Leaderboard routes.
 
@@ -242,7 +241,7 @@ def get_analytics(
                         "Welcome to Carbifyio! Complete your Carbon Calculator log "
                         "to receive tailored coach suggestions."
                     ),
-                )
+                ),
             ],
         )
 
@@ -291,7 +290,7 @@ def _build_coach_tips(
                     f"optimal threshold = {optimal_gap_threshold} days) indicates logging "
                     f"today will help you stay on track and avoid green habit churn!"
                 ),
-            )
+            ),
         )
 
     # Sort categories to surface the dominant emission source
@@ -309,7 +308,7 @@ def _build_coach_tips(
                     "single-occupancy petrol car commuting to public transit or cycling "
                     "this week will save over 10 kg CO2!"
                 ),
-            )
+            ),
         )
     elif highest_cat == "energy" and highest_val > 0:
         tips.append(
@@ -321,7 +320,7 @@ def _build_coach_tips(
                     "Energy usage at home is dominant. Lowering your heating/cooling "
                     "by 2°C or using solar energy could save up to 8 kg CO2 per day."
                 ),
-            )
+            ),
         )
     elif highest_cat == "food":
         if latest_log.diet_type in ("meat_heavy", "medium_meat"):
@@ -334,7 +333,7 @@ def _build_coach_tips(
                         "Your diet has high emissions. Shifting to vegetarian or vegan "
                         "options just twice a week will save 4.3 kg CO2."
                     ),
-                )
+                ),
             )
         else:
             tips.append(
@@ -346,7 +345,7 @@ def _build_coach_tips(
                         "Great work maintaining a low-carbon diet! Sharing your "
                         "eco-friendly recipes with others can expand your positive impact."
                     ),
-                )
+                ),
             )
     elif highest_cat == "waste" and highest_val > 0:
         tips.append(
@@ -358,7 +357,7 @@ def _build_coach_tips(
                     "Reducing waste footprint. Try composting organic waste and avoiding "
                     "plastic wrap. Increasing your recycling rate to 80% saves ~3.5 kg CO2."
                 ),
-            )
+            ),
         )
 
     # Supplementary tips when the list is still short
@@ -373,7 +372,7 @@ def _build_coach_tips(
                         "Turn off AC units and log 'Turned off AC/heating' in the "
                         "Habits tab to earn 15 Eco-points!"
                     ),
-                )
+                ),
             )
         if latest_log.petrol_car_km > 20:
             tips.append(
@@ -385,7 +384,7 @@ def _build_coach_tips(
                         "Log 'Walked/cycled instead of driving' to earn 20 Eco-points "
                         "and offset your transport emissions."
                     ),
-                )
+                ),
             )
         # Safety net: always provide at least one actionable tip
         if not tips:
@@ -398,7 +397,7 @@ def _build_coach_tips(
                         "Explore new habits in the habits dashboard to unlock carbon "
                         "reductions and score more points."
                     ),
-                )
+                ),
             )
 
     return tips

@@ -80,7 +80,7 @@ class TestAnalyticsTrend:
         assert today_point["total_co2_kg"] > 0.0, "Today's CO₂ must be non-zero after logging"
 
     def test_trend_dates_are_ordered_ascending(
-        self, client: TestClient, auth_headers: dict
+        self, client: TestClient, auth_headers: dict,
     ) -> None:
         """Trend dates are returned in ascending chronological order (oldest first)."""
         resp = client.get("/api/analytics/trend", headers=auth_headers)
@@ -89,7 +89,7 @@ class TestAnalyticsTrend:
         assert dates == sorted(dates), "Trend dates must be in ascending order"
 
     def test_trend_covers_last_14_calendar_days(
-        self, client: TestClient, auth_headers: dict
+        self, client: TestClient, auth_headers: dict,
     ) -> None:
         """The first date is exactly 13 days ago and the last date is today."""
         resp = client.get("/api/analytics/trend", headers=auth_headers)
@@ -106,7 +106,7 @@ class TestAnalyticsTrend:
         assert resp.status_code == 401
 
     def test_trend_each_point_has_required_fields(
-        self, client: TestClient, auth_headers: dict
+        self, client: TestClient, auth_headers: dict,
     ) -> None:
         """Every data point must contain 'date' and 'total_co2_kg' keys."""
         resp = client.get("/api/analytics/trend", headers=auth_headers)

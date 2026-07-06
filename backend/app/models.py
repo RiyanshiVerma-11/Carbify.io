@@ -1,5 +1,4 @@
-"""
-backend/app/models.py
+"""backend/app/models.py
 ─────────────────────────────────────────────────────────────
 SQLAlchemy ORM models for Carbifyio.
 
@@ -51,7 +50,7 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
 
     emissions_logs = relationship(
-        "EmissionsLog", back_populates="user", cascade="all, delete-orphan"
+        "EmissionsLog", back_populates="user", cascade="all, delete-orphan",
     )
     habits_logs = relationship("HabitsLog", back_populates="user", cascade="all, delete-orphan")
     challenges = relationship("UserChallenge", back_populates="user", cascade="all, delete-orphan")
@@ -60,8 +59,7 @@ class User(Base):
         """Add *points* and promote the user's level if a threshold is crossed."""
         self.points += points
         new_level = (self.points // POINTS_PER_LEVEL) + 1
-        if new_level > self.level:
-            self.level = new_level
+        self.level = max(self.level, new_level)
 
 
 class EmissionsLog(Base):
@@ -147,7 +145,7 @@ class Challenge(Base):
     duration_days = Column(Integer, default=7)
 
     user_challenges = relationship(
-        "UserChallenge", back_populates="challenge", cascade="all, delete-orphan"
+        "UserChallenge", back_populates="challenge", cascade="all, delete-orphan",
     )
 
 

@@ -1,5 +1,4 @@
-"""
-Centralized carbon emissions calculation utilities.
+"""Centralized carbon emissions calculation utilities.
 
 This module is the single source of truth for all CO2 computation logic.
 Both the calculator and analytics routes import from here — zero duplication.
@@ -19,15 +18,14 @@ from backend.app.config import settings
 # Canonical set of valid diet type strings — shared by schemas.py (Literal) and
 # any runtime guard that needs programmatic membership testing.
 VALID_DIET_TYPES: frozenset[str] = frozenset(
-    {"meat_heavy", "medium_meat", "low_meat", "vegetarian", "vegan"}
+    {"meat_heavy", "medium_meat", "low_meat", "vegetarian", "vegan"},
 )
 
 _FALLBACK_DIET = "vegetarian"
 
 
 def _diet_co2(diet_type: str) -> float:
-    """
-    Return the daily CO2 value for a given diet type.
+    """Return the daily CO2 value for a given diet type.
 
     If an unrecognised string is passed (should not happen after Pydantic
     validation, but defensive coding) the vegetarian factor is used instead
@@ -51,8 +49,7 @@ def calculate_co2(
     waste_kg: float = 0.0,
     recycling_rate: float = 0.0,
 ) -> float:
-    """
-    Calculate total daily CO2 emissions in kilograms.
+    """Calculate total daily CO2 emissions in kilograms.
 
     Args:
         electricity_kwh:   Electricity consumed in kWh.
@@ -69,6 +66,7 @@ def calculate_co2(
 
     Returns:
         Total CO2 equivalent in kg, rounded to 2 decimal places.
+
     """
     breakdown = calculate_co2_breakdown(
         electricity_kwh=electricity_kwh,
@@ -97,14 +95,14 @@ def calculate_co2_breakdown(
     waste_kg: float = 0.0,
     recycling_rate: float = 0.0,
 ) -> dict[str, float]:
-    """
-    Calculate CO2 broken down by category.
+    """Calculate CO2 broken down by category.
 
     Internally delegates to the same emission-factor math used by
     ``calculate_co2`` — no duplicated multiplier constants.
 
     Returns:
         dict with keys: energy, transport, food, waste (all floats in kg).
+
     """
     f = settings.EMISSION_FACTORS
 

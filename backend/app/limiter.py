@@ -1,5 +1,4 @@
-"""
-backend/app/limiter.py
+"""backend/app/limiter.py
 ─────────────────────────────────────────────────────────────
 Global rate-limiter instance shared across all route modules.
 

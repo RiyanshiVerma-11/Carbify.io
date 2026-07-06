@@ -179,7 +179,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date,
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -187,7 +187,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=8),
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -195,7 +195,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=17),
-        )
+        ),
     )
 
     # Seed gaps for User 2: 3 days and 4 days
@@ -205,7 +205,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date,
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -213,7 +213,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=3),
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -221,7 +221,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=7),
-        )
+        ),
     )
 
     # Seed gaps for User 3: 5 days and 10 days
@@ -231,7 +231,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date,
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -239,7 +239,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=5),
-        )
+        ),
     )
     db.add(
         models.HabitsLog(
@@ -247,7 +247,7 @@ def test_youden_threshold_unit(client, auth_headers) -> None:
             habit_type="energy",
             habit_name="test",
             logged_date=base_date + datetime.timedelta(days=15),
-        )
+        ),
     )
 
     db.commit()

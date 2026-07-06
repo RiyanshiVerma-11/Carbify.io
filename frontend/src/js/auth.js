@@ -4,7 +4,7 @@
  *              login, session persistence (localStorage), and profile refresh.
  */
 
-import { BASE_URL } from "./constants.js";
+import { BASE_URL, handleResponse } from "./constants.js";
 
 /**
  * Stateless authentication service backed by JWT tokens stored in localStorage.
@@ -71,11 +71,7 @@ export const AuthService = {
                 body: JSON.stringify({ username, email, password })
             });
             
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Registration failed");
-            }
-            return data;
+            return await handleResponse(response);
         } catch (error) {
             console.error("Registration error:", error);
             throw error;
@@ -101,10 +97,7 @@ export const AuthService = {
                 body: formData
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.detail || "Authentication failed");
-            }
+            const data = await handleResponse(response);
             
             // Set session
             this.setSession(data.access_token, data.user);
@@ -130,11 +123,7 @@ export const AuthService = {
                 headers: this.getAuthHeaders()
             });
 
-            const data = await response.json();
-            if (!response.ok) {
-                this.clearSession();
-                throw new Error(data.detail || "Failed to fetch profile");
-            }
+            const data = await handleResponse(response);
             // Update user cache
             localStorage.setItem("carbify_user", JSON.stringify(data));
             return data;

@@ -1,5 +1,4 @@
-"""
-Pydantic v2 schemas for request validation and response serialization.
+"""Pydantic v2 schemas for request validation and response serialization.
 
 Key type-safety guarantees enforced here:
 - DietType Literal: invalid strings bounce with HTTP 422 (Unprocessable Entity).

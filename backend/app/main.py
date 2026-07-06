@@ -1,5 +1,4 @@
-"""
-backend/app/main.py
+"""backend/app/main.py
 ─────────────────────────────────────────────────────────────
 Application entry point for the Carbifyio FastAPI backend.
 

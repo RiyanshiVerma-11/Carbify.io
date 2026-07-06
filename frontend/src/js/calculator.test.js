@@ -31,6 +31,13 @@ vi.mock("./constants.js", () => ({
         },
         waste_factor: 0.45,
     },
+    handleResponse: async (response) => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || `Request failed with status ${response.status}`);
+        }
+        return data;
+    },
 }));
 
 // Mock auth.js to avoid localStorage dependency

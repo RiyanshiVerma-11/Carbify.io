@@ -1,5 +1,4 @@
-"""
-backend/app/constants.py
+"""backend/app/constants.py
 ─────────────────────────────────────────────────────────────
 Centralised application constants, seed data, and magic numbers.
 

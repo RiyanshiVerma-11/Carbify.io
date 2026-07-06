@@ -1,5 +1,4 @@
-"""
-backend/run.py
+"""backend/run.py
 ─────────────────────────────────────────────────────────────
 Local development server launcher.
 

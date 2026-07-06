@@ -1,5 +1,4 @@
-"""
-backend/app/routes/habits.py
+"""backend/app/routes/habits.py
 ─────────────────────────────────────────────────────────────
 Habits Tracker routes.
 
@@ -97,8 +96,7 @@ def log_habit(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db),
 ) -> models.HabitsLog:
-    """
-    Record a single habit log entry for the authenticated user.
+    """Record a single habit log entry for the authenticated user.
 
     Business rules
     ──────────────

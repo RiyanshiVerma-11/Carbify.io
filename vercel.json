@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://carbify-io.onrender.com/api/:path*"
+    }
+  ]
+}
